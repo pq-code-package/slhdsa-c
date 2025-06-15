@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
  */
 
-/* === FIPS 180-4 SHA2-256 Implementation */
+/* === FIPS 180-4 SHA2-256 / Portable C Implementation */
 
 #include <string.h>
 #include "plat_local.h"
 #include "sha2_api.h"
 
-#ifndef SLOTH_SHA256
-/* ( slow / processor implementation fallback ) */
+#ifdef SLH_EXPERIMENTAL
+uint64_t sha2_256_compress_count = 0; /* instrumentation */
+#endif
 
 /* processing step, sets "d" and "h" as a function of all 8 inputs */
 /* and message schedule "mi", round constant "ki" */
@@ -53,6 +54,10 @@ void sha2_256_compress(void *v)
   uint32_t *sp = (uint32_t *)v;
   const uint32_t *mp = sp + 8;
   const uint32_t *kp = ck;
+
+#ifdef SLH_EXPERIMENTAL
+  sha2_256_compress_count++; /* instrumentation */
+#endif
 
   a = sp[0] = rev8_be32(sp[0]);
   b = sp[1] = rev8_be32(sp[1]);
@@ -134,8 +139,6 @@ void sha2_256_compress(void *v)
   sp[6] = rev8_be32(sp[6] + g);
   sp[7] = rev8_be32(sp[7] + h);
 }
-
-#endif
 
 /* initialize */
 

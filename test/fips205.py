@@ -109,10 +109,14 @@ class SLH_DSA:
     def __init__(self,  param='SLH-DSA-SHAKE-128f'):
 
         #   set parameters
-        if param not in SLH_DSA_PARAM:
-            raise ValueError
-        (self.hashname, self.n, self.h, self.d, self.hp,
-            self.a, self.k, self.lg_w, self.m) = SLH_DSA_PARAM[param]
+        if isinstance(param, str):
+            if param not in SLH_DSA_PARAM:
+                raise ValueError
+            (self.hashname, self.n, self.h, self.d, self.hp,
+                self.a, self.k, self.lg_w, self.m) = SLH_DSA_PARAM[param]
+        else:
+            (self.hashname, self.n, self.h, self.d, self.hp,
+                self.a, self.k, self.lg_w, self.m) = param
 
         #   instantiate hash functions
         if self.hashname == 'SHAKE':
@@ -140,8 +144,8 @@ class SLH_DSA:
         #   equations 5.1 - 5.4
         self.w      = 2**self.lg_w
         self.len1   = (8 * self.n + (self.lg_w - 1)) // self.lg_w
-        self.len2   = (self.len1 *
-                        (self.w - 1)).bit_length() // self.lg_w + 1
+        self.len2   = ((self.len1 *
+                        (self.w - 1)).bit_length() - 1) // self.lg_w + 1
         self.len    = self.len1 + self.len2
 
         #   external parameter sizes

@@ -3,10 +3,11 @@
 
 .PHONY: test
 
-XTEST	?=	xfips205
-CSRC	=	$(wildcard *.c) test/xfips205.c
+CSRC	=	$(wildcard *.c)
 OBJS	= 	$(CSRC:.c=.o)
-KATNUM	?=	1
+
+XTEST	?=	xfips205
+XTESTC	?=	test/xfips205.c
 
 CC 		=	gcc
 CFLAGS	:=	-Wall \
@@ -28,7 +29,7 @@ CFLAGS	:=	-Wall \
 LDLIBS	+=
 
 $(XTEST):	$(OBJS)
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $(XTEST) $(OBJS) $(LDLIBS)
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJS) $(XTESTC) $(LDLIBS)
 
 %.o:	%.[cS]
 	$(CC) $(CFLAGS) -c $^ -o $@
