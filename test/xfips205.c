@@ -5,12 +5,10 @@
 
 /* === ACVP Test wrapper for slhdsa-c */
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "../slh_adrs.h"
 #include "../slh_dsa.h"
 #include "../slh_prehash.h"
 #include "../slh_var.h"

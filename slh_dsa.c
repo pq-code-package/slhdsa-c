@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
  */
 
-/* === FIPS 205 (ipd) Stateless Hash-Based Digital Signature Standard */
+/* === FIPS 205 Stateless Hash-Based Digital Signature Standard */
 
 #include "slh_dsa.h"
 #include "slh_adrs.h"
 #include "slh_var.h"
+
+#include "test/my_dbg.h"
 
 /* === Internal */
 
@@ -70,40 +72,11 @@ static inline size_t base_2b(uint32_t *v, const uint8_t *x, uint32_t b,
   {
     while (l < b)
     {
-      t = (t << 8) + x[j++];
+      t = (t << 8) + ((uint32_t) x[j++]);
       l += 8;
     }
     l -= b;
     v[i] = (t >> l) & m;
-  }
-  return j;
-}
-
-/* little bit faster version for b = 4 */
-
-static inline size_t base_16(uint32_t *v, const uint8_t *x, int v_len)
-{
-  int i, j, l, t;
-
-  j = 0;
-  for (i = 0; i < v_len - 2; i += 2)
-  {
-    t = x[j++];
-    v[i] = t >> 4;
-    v[i + 1] = t & 0xF;
-  }
-
-  l = 0;
-  t = 0;
-  for (; i < v_len; i++)
-  {
-    while (l < 4)
-    {
-      t = (t << 8) + x[j++];
-      l += 8;
-    }
-    l -= 4;
-    v[i] = (t >> l) & 0xF;
   }
   return j;
 }
@@ -129,15 +102,8 @@ static void wots_csum(uint32_t *vm, const uint8_t *m, const slh_param_t *prm)
   len1 = get_len1(prm);
   len2 = gen_len2(prm);
 
-  if (prm->lg_w == 4)
-  {
-    base_16(vm, m, len1);
-  }
-  else
-  {
-    base_2b(vm, m, prm->lg_w, len1);
-  }
-
+  base_2b(vm, m, prm->lg_w, len1);
+  
   csum = 0;
   t = (1 << prm->lg_w) - 1;
   for (i = 0; i < len1; i++)
@@ -150,14 +116,7 @@ static void wots_csum(uint32_t *vm, const uint8_t *m, const slh_param_t *prm)
   memset(buf, 0, sizeof(buf));
   slh_tobyte(buf, csum, t);
 
-  if (prm->lg_w == 4)
-  {
-    base_16(&vm[len1], buf, len2);
-  }
-  else
-  {
-    base_2b(&vm[len1], buf, prm->lg_w, len2);
-  }
+  base_2b(&vm[len1], buf, prm->lg_w, len2);
 }
 
 static size_t wots_sign(slh_var_t *var, uint8_t *sig, const uint8_t *m)
@@ -186,10 +145,10 @@ static void wots_pk_from_sig(slh_var_t *var, uint8_t *pk, const uint8_t *sig,
                              const uint8_t *m)
 {
   const slh_param_t *prm = var->prm;
+  size_t n = prm->n;
   uint32_t i, t, len;
   uint32_t vm[SLH_MAX_LEN];
   uint8_t tmp[SLH_MAX_LEN * SLH_MAX_N];
-  size_t n = prm->n;
   size_t tmp_sz;
 
   wots_csum(vm, m, prm);
@@ -294,9 +253,9 @@ static void xmss_pk_from_sig(slh_var_t *var, uint8_t *root, uint32_t idx,
                              const uint8_t *sig, const uint8_t *m)
 {
   const slh_param_t *prm = var->prm;
+  size_t n = prm->n;
   uint32_t k;
   const uint8_t *auth;
-  size_t n = prm->n;
 
   adrs_set_type_and_clear_not_kp(var, ADRS_WOTS_HASH);
   adrs_set_key_pair_address(var, idx);
@@ -322,7 +281,6 @@ static void xmss_pk_from_sig(slh_var_t *var, uint8_t *root, uint32_t idx,
     auth += n;
   }
 }
-
 
 /* === Generate a hypertree signature. */
 /* Algorithm 12: ht_sign(M, SK.seed, PK.seed, idx_tree, idx_leaf ) */
@@ -353,7 +311,6 @@ static size_t ht_sign(slh_var_t *var, uint8_t *sh, uint8_t *m, uint64_t i_tree,
   return sx_sz * prm->d;
 }
 
-
 /* === Verify a hypertree signature. */
 /* Algorithm 13: ht_verify(M, SIG_HT, PK.seed, idx_tree, idx_leaf, PK.root) */
 
@@ -361,10 +318,9 @@ static int ht_verify(slh_var_t *var, const uint8_t *m, const uint8_t *sig_ht,
                      uint64_t i_tree, uint32_t i_leaf)
 {
   const slh_param_t *prm = var->prm;
-  uint32_t i, j;
-  uint8_t node[SLH_MAX_N];
+  uint32_t j;
+  uint8_t node[SLH_MAX_N] = {0};
   size_t st_sz;
-  uint8_t t;
 
   adrs_zero(var);
   adrs_set_tree_address(var, i_tree);
@@ -372,6 +328,7 @@ static int ht_verify(slh_var_t *var, const uint8_t *m, const uint8_t *sig_ht,
   xmss_pk_from_sig(var, node, i_leaf, sig_ht, m);
 
   st_sz = (prm->hp + get_len(prm)) * prm->n;
+
   for (j = 1; j < prm->d; j++)
   {
     i_leaf = i_tree & ((1 << prm->hp) - 1);
@@ -382,12 +339,7 @@ static int ht_verify(slh_var_t *var, const uint8_t *m, const uint8_t *sig_ht,
     xmss_pk_from_sig(var, node, i_leaf, sig_ht, node);
   }
 
-  t = 0;
-  for (i = 0; i < prm->n; i++)
-  {
-    t |= node[i] ^ var->pk_root[i];
-  }
-  return t == 0;
+  return memcmp(node, var->pk_root, prm->n) == 0;
 }
 
 /* === Generate a FORS private-key value. */
@@ -427,7 +379,6 @@ static void fors_node(slh_var_t *var, uint8_t *node, uint32_t i, uint32_t z)
     i++; /* advance index */
   }
 }
-
 
 /* === Generates a FORS signature. */
 /* Algorithm 16: fors_sign(md, SK.seed, PK.seed, ADRS) */
@@ -599,7 +550,7 @@ static size_t slh_sign_digest(slh_var_t *var, uint8_t *sig,
   const uint8_t *md = digest;
   uint64_t i_tree = 0;
   uint32_t i_leaf = 0;
-  uint8_t pk_fors[SLH_MAX_N];
+  uint8_t pk_fors[SLH_MAX_N] = {0};
   size_t sig_sz;
 
   split_digest(&i_tree, &i_leaf, digest, var->prm);
@@ -662,7 +613,7 @@ size_t slh_sign(uint8_t *sig, const uint8_t *m, size_t m_sz, const uint8_t *ctx,
 {
   slh_var_t var;
   const uint8_t *opt_rand;
-  uint8_t digest[SLH_MAX_M];
+  uint8_t digest[SLH_MAX_M] = {0};
   size_t sig_sz;
 
   if (ctx_sz > 255)
@@ -693,7 +644,6 @@ size_t slh_sign(uint8_t *sig, const uint8_t *m, size_t m_sz, const uint8_t *ctx,
   return sig_sz;
 }
 
-
 /* === sigVer === */
 
 /* most of Algorithm 20: slh_verify_internal(M, SIG, PK) */
@@ -702,7 +652,7 @@ static int slh_verify_digest(slh_var_t *var, const uint8_t *digest,
                              const uint8_t *sig, size_t sig_sz,
                              const slh_param_t *prm)
 {
-  uint8_t pk_fors[SLH_MAX_N];
+  uint8_t pk_fors[SLH_MAX_N] = { 0 };;
   const uint8_t *sig_fors;
   const uint8_t *sig_ht;
   const uint8_t *md = digest;
@@ -729,7 +679,6 @@ static int slh_verify_digest(slh_var_t *var, const uint8_t *digest,
 
   return ht_verify(var, pk_fors, sig_ht, i_tree, i_leaf);
 }
-
 
 /* Algorithm 20: slh_verify_internal(M, SIG, PK) */
 

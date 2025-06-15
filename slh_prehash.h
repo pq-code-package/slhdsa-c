@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
  */
 
-/* === FIPS 205 (ipd) Stateless Hash-Based Digital Signature Standard. */
+/* === FIPS 205 Stateless Hash-Based Digital Signature Standard. */
 /* HashSLH functions */
 
 #ifndef _SLH_PREHASH_H_

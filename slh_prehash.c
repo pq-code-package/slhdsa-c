@@ -150,7 +150,7 @@ static size_t hash_slh_dsa_pad(uint8_t *mp, const uint8_t *m, size_t m_sz,
 }
 
 /* === Generates a pre-hash SLH-DSA signature. */
-/* Algorithm 23: Algorithm 23 hash_slh_sign(M, ctx, PH, SK) */
+/* Algorithm 23: hash_slh_sign(M, ctx, PH, SK) */
 
 size_t hash_slh_sign(uint8_t *sig, const uint8_t *m, size_t m_sz,
                      const uint8_t *ctx, size_t ctx_sz, const char *ph,

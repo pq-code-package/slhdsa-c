@@ -5,8 +5,6 @@
 
 /* === Portable C code: Functions for instantiation of SLH-DSA with SHA2 */
 
-#ifndef SLOTH_SHA256
-
 #include <string.h>
 #include "plat_local.h"
 #include "sha2_api.h"
@@ -581,6 +579,3 @@ const slh_param_t slh_dsa_sha2_256f = {/* .alg_id = */ "SLH-DSA-SHA2-256f",
                                        /* .h_f = */ sha2_256_f,
                                        /* .h_h = */ sha2_512_h,
                                        /* .h_t = */ sha2_512_tl};
-
-/* SLOTH_SHA256 */
-#endif
