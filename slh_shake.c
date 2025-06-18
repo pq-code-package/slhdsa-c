@@ -5,8 +5,6 @@
 
 /* === Portable C code: Functions for instantiation of SLH-DSA with SHAKE */
 
-#ifndef SLOTH_KECCAK
-
 #include "sha3_api.h"
 #include "slh_adrs.h"
 #include "slh_var.h"
@@ -64,7 +62,6 @@ static void shake_prf(slh_var_t *var, uint8_t *h)
   shake_f(var, h, var->sk_seed);
 }
 
-
 /* PRFmsg (SK.prf, opt_rand, M) = SHAKE256(SK.prf || opt_rand || M, 8n) */
 
 static void shake_prf_msg(slh_var_t *var, uint8_t *h, const uint8_t *opt_rand,
@@ -107,7 +104,6 @@ static void shake_t(slh_var_t *var, uint8_t *h, const uint8_t *m, size_t m_sz)
 
   shake_out(&sha3, h, n);
 }
-
 
 /* H(PK.seed, ADRS, M2 ) = SHAKE256(PK.seed || ADRS || M2, 8n) */
 
@@ -353,6 +349,3 @@ const slh_param_t slh_dsa_shake_256f = {/* .alg_id = */ "SLH-DSA-SHAKE-256f",
                                         /* .h_f = */ shake_f,
                                         /* .h_h = */ shake_h,
                                         /* .h_t = */ shake_t};
-
-/* no SLOTH_KECCAK */
-#endif

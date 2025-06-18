@@ -5,14 +5,16 @@
 
 /* === FIPS 202 Keccak permutation implementation for a 64-bit target. */
 
-#ifndef SLOTH_KECCAK
-
 #include "plat_local.h"
 #include "sha3_api.h"
 
+#ifdef SLH_EXPERIMENTAL
+uint64_t keccak_f1600_count = 0; /* instrumentation */
+#endif
+
 /* forward permutation */
 
-void keccak_f1600(void *st)
+void keccak_f1600(uint64_t x[25])
 {
   /* round constants */
   static const uint64_t keccak_rc[24] = {
@@ -30,8 +32,11 @@ void keccak_f1600(void *st)
       UINT64_C(0x0000000080000001), UINT64_C(0x8000000080008008)};
 
   int i;
-  uint64_t *x = (uint64_t *)st;
   uint64_t t, y0, y1, y2, y3, y4;
+
+#ifdef SLH_EXPERIMENTAL
+  keccak_f1600_count++; /* instrumentation */
+#endif
 
   /* iteration */
 
@@ -148,6 +153,3 @@ void keccak_f1600(void *st)
     x[0] = x[0] ^ keccak_rc[i];
   }
 }
-
-/* SLOTH_KECCAK */
-#endif

@@ -4,9 +4,7 @@
  */
 
 /* === FIPS 202: SHA-3 hash and SHAKE eXtensible Output Functions (XOF) */
-/* Hash padding mode code for testing permutation implementations. */
 
-#ifndef SLOTH_NO_SHA3
 #include "sha3_api.h"
 
 /* These functions have not been optimized for performance. */
@@ -111,6 +109,3 @@ void shake(uint8_t *md, size_t md_sz, const void *in, size_t in_sz, size_t r_sz)
   sha3_update(&sha3, in, in_sz);
   shake_out(&sha3, md, md_sz);
 }
-
-/* SLOTH_NO_SHA3 */
-#endif

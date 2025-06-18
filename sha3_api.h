@@ -50,7 +50,7 @@ extern "C"
   void shake_out(sha3_var_t *c, uint8_t *out, size_t out_sz);
 
   /* core permutation */
-  void keccak_f1600(void *st);
+  void keccak_f1600(uint64_t x[25]);
 
 #ifdef __cplusplus
 }

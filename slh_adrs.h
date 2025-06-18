@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
  */
 
-/* === Internal ADRS manipulation functions (Section 4.2) */
+/* === Internal ADRS manipulation functions (FIPS 205 Section 4.3) */
 
 #ifndef _SLH_ADRS_H_
 #define _SLH_ADRS_H_
@@ -155,7 +155,6 @@ static inline void adrs_set_type_and_clear_not_kp(slh_var_t *var, uint32_t y)
   var->adrs->u32[6] = 0;
   var->adrs->u32[7] = 0;
 }
-
 
 /* === Compressed 22-byte address ADRSc used with SHA-2. */
 static inline void adrsc_22(const slh_var_t *var, uint8_t *ac)
