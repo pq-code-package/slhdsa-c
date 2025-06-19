@@ -34,16 +34,8 @@ $(XTEST):	$(OBJS)
 %.o:	%.[cS]
 	$(CC) $(CFLAGS) -c $^ -o $@
 
-# without gnu parallel: bash test/acvp_cases.sh | tee test.log
-test:	$(XTEST) test/acvp_cases.sh
-	cat test/acvp_cases.sh | parallel --pipe bash | tee test.log
-	@echo "=== test summary ==="
-	@echo "PASS:" `grep -c PASS test.log`
-	@echo "SKIP:" `grep -c SKIP test.log`
-	@echo "FAIL:" `grep -c FAIL test.log`
-
-test/acvp_cases.sh:
-	cd test && $(MAKE) acvp_cases.sh
+test: $(XTEST)
+	python3 test/acvp_client.py
 
 clean:
 	$(RM) -rf $(XTEST) $(OBJS) *.rsp *.req *.log

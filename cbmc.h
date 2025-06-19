@@ -1,6 +1,6 @@
 /*
  * Copyright (c) The mlkem-native project authors
- * Copyright (c) The slhdsa-native project authors
+ * Copyright (c) The slhdsa-c project authors
  * SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
  */
 

@@ -21,10 +21,7 @@ $(XCOUNT):	$(OBJS) xcount.c my_dbg.c
 %.o:	%.[cS]
 	$(CC) $(CFLAGS) -c $^ -o $@
 
-acvp_cases.sh: ACVP-Server/gen-val/json-files
-	python3 test_slhdsa.py > $@
-
-new_param.csv: $(XCOUNT) test_param.py new_param.txt acvp_cases.sh
+new_param.csv: $(XCOUNT) test_param.py new_param.txt
 	echo "alg_id, pk, sk, sig, keygen, sign, vfy_ok, vfy_fail"> $@
 	./$(XCOUNT) | tee /dev/tty | sort >> $@
 	python3 test_param.py | parallel | tee /dev/tty | sort >> $@
@@ -35,6 +32,5 @@ ACVP-Server/gen-val/json-files:
 clean:
 	$(RM) -rf $(XCOUNT) $(OBJS) *.log
 	$(RM) -f *.pyc *.cprof */*.pyc *.rsp *.log
-	$(RM) -f acvp_cases.sh
 	$(RM) -rf __pycache__ */__pycache__
 
