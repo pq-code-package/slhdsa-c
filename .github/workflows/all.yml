@@ -1,0 +1,23 @@
+# Copyright (c) The mlkem-native project authors
+# Copyright (c) The slhdsa-native project authors
+# SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
+
+name: CI
+permissions:
+  contents: read
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+    types: [ "opened", "synchronize" ]
+
+jobs:
+  base:
+    name: Base
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    uses: ./.github/workflows/base.yml
+    secrets: inherit
