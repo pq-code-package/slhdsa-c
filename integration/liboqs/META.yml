@@ -4,6 +4,25 @@ algDetails:
   eufCMA: 'true'
   sufCMA: 'true'
 
+sources:
+  integration/liboqs/META.yml
+  plat_local.h
+  sha2_256.c
+  sha2_512.c
+  sha2_api.h
+  sha3_api.c
+  sha3_api.h
+  sha3_f1600.c
+  slh_adrs.h
+  slh_dsa.c
+  slh_dsa.h
+  slh_param.h
+  slh_prehash.c
+  slh_prehash.h
+  slh_sha2.c
+  slh_shake.c
+  slh_var.h
+
 paramSets:
   -
     name: 128s
