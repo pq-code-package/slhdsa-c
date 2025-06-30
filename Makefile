@@ -9,8 +9,8 @@ OBJS	= 	$(CSRC:.c=.o)
 XTEST	?=	xfips205
 XTESTC	?=	test/xfips205.c
 
-CC 		=	gcc
-CFLAGS	:=	-Wall \
+CC.     ?= gcc
+CFLAGS.  :=	-Wall \
 		-Wextra \
 		-Werror=unused-result \
 		-Wpedantic \
@@ -24,7 +24,8 @@ CFLAGS	:=	-Wall \
 		-O3 \
 		-fomit-frame-pointer \
 		-std=c99 \
-		-pedantic
+		-pedantic \
+		$(CFLAGS)
 
 LDLIBS	+=
 
@@ -41,6 +42,22 @@ test:	$(XTEST) test/acvp_cases.sh
 	@echo "PASS:" `grep -c PASS test.log`
 	@echo "SKIP:" `grep -c SKIP test.log`
 	@echo "FAIL:" `grep -c FAIL test.log`
+
+# do not rely on parallel in CI
+quickcheck:	$(XTEST) test/acvp_cases.sh
+	bash test/acvp_cases.sh | tee test.log
+	@echo "=== test summary ==="
+	@echo "PASS:" `grep -c PASS test.log`
+	@echo "SKIP:" `grep -c SKIP test.log`
+	@echo "FAIL:" `grep -c FAIL test.log`
+	@skips=`grep -c SKIP test.log`; \
+	 fails=`grep -c FAIL test.log`; \
+	 if [ "$$skips" -ne 0 ] || [ "$$fails" -ne 0 ]; then \
+	     echo "Test failed: SKIP=$$skips, FAIL=$$fails"; \
+	     exit 1; \
+	 else \
+	     echo "ALL GOOD!"; \
+	 fi
 
 test/acvp_cases.sh:
 	cd test && $(MAKE) acvp_cases.sh
