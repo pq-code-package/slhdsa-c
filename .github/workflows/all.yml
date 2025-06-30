@@ -21,3 +21,11 @@ jobs:
       id-token: 'write'
     uses: ./.github/workflows/base.yml
     secrets: inherit
+  ci:
+    name: Extended
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    needs: [ base ]
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
