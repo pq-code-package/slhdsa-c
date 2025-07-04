@@ -9,8 +9,6 @@
 #include "slh_adrs.h"
 #include "slh_var.h"
 
-#include "test/my_dbg.h"
-
 /* === Internal */
 
 /* helper functions to compute "len = len1 + len2" */
