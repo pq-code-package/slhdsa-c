@@ -1,0 +1,54 @@
+# Copyright (c) The mlkem-native project authors
+# Copyright (c) The slhdsa-c project authors
+# SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
+
+name: CBMC
+description: Run CBMC proofs for slhdsa-c
+
+inputs:
+  nix-shell:
+    description: Run in the specified Nix environment if exists
+    default: "ci-cbmc"
+  nix-cache:
+    description: Determine whether to enable nix cache
+    default: 'true'
+  nix-verbose:
+    description: Determine wether to suppress nix log or not
+    default: 'false'
+  custom_shell:
+    description: The shell to use. Only relevant if use-nix is 'false'
+    default: "bash"
+  gh_token:
+    description: Github access token to use
+    required: true
+runs:
+  using: composite
+  steps:
+      - uses: ./.github/actions/setup-shell
+        with:
+          nix-shell: ${{ inputs.nix-shell }}
+          nix-cache: ${{ inputs.nix-cache }}
+          nix-verbose: ${{ inputs.nix-verbose }}
+          gh_token: ${{ inputs.gh_token }}
+          custom_shell: ${{ inputs.custom_shell }}
+          script: |
+
+            if [[ ${{ inputs.nix-shell }} != '' ]]; then
+              nix-collect-garbage
+            fi
+
+            cat >> $GITHUB_STEP_SUMMARY << EOF
+              ## Setup
+              Architecture: $(uname -m)
+              - $(nix --version)
+              - $(cbmc --version)
+              - litani Version $(litani --version)
+              - Cadical Version $(cadical --version)
+              - $(bash --version | grep -m1 "")
+            EOF
+      - name: Run CBMC proofs
+        shell: ${{ env.SHELL }}
+        run: |
+          cd proofs/cbmc
+          python3 run-cbmc-proofs.py --summarize --no-coverage -j$(nproc)
+

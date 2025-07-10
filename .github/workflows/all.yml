@@ -1,0 +1,32 @@
+# Copyright (c) The mlkem-native project authors
+# Copyright (c) The slhdsa-c project authors
+# SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
+
+name: CI
+permissions:
+  contents: read
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+    types: [ "opened", "synchronize" ]
+jobs:
+  nix:
+    name: Nix
+    permissions:
+      actions: 'write'
+      contents: 'read'
+      id-token: 'write'
+    uses: ./.github/workflows/nix.yml
+    secrets: inherit
+  cbmc:
+    name: CBMC
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    needs: [ nix ]
+    uses: ./.github/workflows/cbmc.yml
+    secrets: inherit
+    
