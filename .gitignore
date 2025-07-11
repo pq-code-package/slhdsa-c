@@ -63,3 +63,5 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+# Downloaded ACVP test data
+test/.acvp-data/
