@@ -26,9 +26,6 @@ new_param.csv: $(XCOUNT) test_param.py new_param.txt
 	./$(XCOUNT) | tee /dev/tty | sort >> $@
 	python3 test_param.py | parallel | tee /dev/tty | sort >> $@
 
-ACVP-Server/gen-val/json-files:
-	git submodule update --init ACVP-Server
-
 clean:
 	$(RM) -rf $(XCOUNT) $(OBJS) *.log
 	$(RM) -f *.pyc *.cprof */*.pyc *.rsp *.log

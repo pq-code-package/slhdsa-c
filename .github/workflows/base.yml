@@ -25,18 +25,18 @@ jobs:
            name: 'macos (aarch64)'
          - runner: macos-13
            name: 'macos (x86_64)'
+        acvp-version: [v1.1.0.40, v1.1.0.39]
         exclude:
           - {external: true,
              target: {
                runner: pqcp-arm64,
                name: 'aarch64'
              }}
-    name: Quickcheck (${{ matrix.target.name }})
+    name: Quickcheck (${{ matrix.target.name }}, ACVP ${{ matrix.acvp-version }})
     runs-on: ${{ matrix.target.runner }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          submodules: true
-      - name: make test
+      - name: Run ACVP test
         run: |
-          make test
+          make
+          python3 test/acvp_client.py --version ${{ matrix.acvp-version }}

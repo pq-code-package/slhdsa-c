@@ -9,9 +9,55 @@ import json
 import os
 import subprocess
 import sys
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
-# === JSON parsing functions ===
+# === ACVP file downloading ===
+
+def download_acvp_files(version="v1.1.0.40"):
+    """Download ACVP test files for the specified version if not present."""
+    base_url = f"https://raw.githubusercontent.com/usnistgov/ACVP-Server/{version}/gen-val/json-files"
+
+    # Files we need to download
+    files_to_download = [
+        "SLH-DSA-keyGen-FIPS205/prompt.json",
+        "SLH-DSA-keyGen-FIPS205/expectedResults.json",
+        "SLH-DSA-sigGen-FIPS205/prompt.json",
+        "SLH-DSA-sigGen-FIPS205/expectedResults.json",
+        "SLH-DSA-sigVer-FIPS205/prompt.json",
+        "SLH-DSA-sigVer-FIPS205/expectedResults.json",
+        "SLH-DSA-sigVer-FIPS205/internalProjection.json"
+    ]
+
+    # Create directory structure
+    data_dir = Path(f"test/.acvp-data/{version}/files")
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    for file_path in files_to_download:
+        local_file = data_dir / file_path
+        local_file.parent.mkdir(parents=True, exist_ok=True)
+
+        if not local_file.exists():
+            url = f"{base_url}/{file_path}"
+            print(f"Downloading {file_path}...", file=sys.stderr)
+            try:
+                urllib.request.urlretrieve(url, local_file)
+                # Verify the file is valid JSON
+                with open(local_file, 'r') as f:
+                    json.load(f)
+            except json.JSONDecodeError as e:
+                print(f"Error: Downloaded file {file_path} is not valid JSON: {e}", file=sys.stderr)
+                local_file.unlink(missing_ok=True)  # Remove corrupted file
+                return False
+            except Exception as e:
+                print(f"Error downloading {file_path}: {e}", file=sys.stderr)
+                local_file.unlink(missing_ok=True)  # Remove partial file
+                return False
+
+    return True
+
+# === JSON parsing functions  ===
 
 def slhdsa_load_keygen(req_fn, res_fn):
     with open(req_fn) as f:
@@ -170,15 +216,22 @@ def run_test_kat(test_type, kat, jobs, xbin='./xfips205'):
 
 def main():
     parser = argparse.ArgumentParser(description="SLH-DSA ACVP test runner")
-    parser.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 4, 
+    parser.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 4,
                        help="Number of parallel jobs (default: auto-detect CPU cores)")
+    parser.add_argument("--version", "-v", default="v1.1.0.40",
+                       help="ACVP test vector version (default: v1.1.0.40)")
 
     args = parser.parse_args()
 
-    print("Generating test commands from ACVP JSON files...", file=sys.stderr)
+    print(f"Using ACVP test vectors version {args.version}", file=sys.stderr)
+
+    # Download files if needed
+    if not download_acvp_files(args.version):
+        print("Failed to download ACVP test files", file=sys.stderr)
+        return 1
 
     try:
-        json_path = 'test/ACVP-Server/gen-val/json-files/'
+        json_path = f"test/.acvp-data/{args.version}/files/"
 
         keygen_kat = slhdsa_load_keygen(
             json_path + 'SLH-DSA-keyGen-FIPS205/prompt.json',
@@ -194,8 +247,7 @@ def main():
             json_path + 'SLH-DSA-sigVer-FIPS205/internalProjection.json')
 
     except FileNotFoundError as e:
-        print(f"Error: Could not find ACVP JSON files. Make sure submodule is initialized.", file=sys.stderr)
-        print(f"Run: git submodule update --init --recursive", file=sys.stderr)
+        print(f"Error: Could not find ACVP JSON files: {e}", file=sys.stderr)
         return 1
 
     total_tests = len(keygen_kat) + len(siggen_kat) + len(sigver_kat)
