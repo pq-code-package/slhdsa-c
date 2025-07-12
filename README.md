@@ -1,7 +1,10 @@
 [//]: # (SPDX-License-Identifier: CC-BY-4.0)
 #   slhdsa-c
+[![License: Apache](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A portable C implementation of SLH-DSA ("Stateless Hash-Based Digital Signature Standard") as described in [FIPS 205](https://doi.org/10.6028/NIST.FIPS.205).
+A portable C90 implementation of SLH-DSA ("Stateless Hash-Based Digital Signature Standard") as described in [FIPS 205](https://doi.org/10.6028/NIST.FIPS.205).
 
 * Supports all 12 parameter sets in FIPS 205, both "pure" and "internal" functions (without recompiling for various parameter sets), as well as prehash modes.
 * Self-contained implementation without external dependencies. Can be easily included into applications.
@@ -25,6 +28,13 @@ This code was derived from [SLotH](https://github.com/slh-dsa/sloth) driver code
 | SLH-DSA-SHA2-256f  |  5  | 64 | 128 | 49856 |
 | SLH-DSA-SHAKE-256f |  5  | 64 | 128 | 49856 |
 
+## Status
+
+slhdsa-c is work in progress. **WE DO NOT CURRENTLY RECOMMEND RELYING ON THIS LIBRARY IN A
+PRODUCTION ENVIRONMENT OR TO PROTECT ANY SENSITIVE DATA.** Once we have the first stable version,
+this notice will be removed.
+
+
 ##  Building and Running Known Answer Tests
 
 The implementation in this directory includes the necessary hash functions and, hence, has no external library dependencies. On a Linux system, you can typically use `make` to build the test wrapper executable `xfips205`.
@@ -38,23 +48,23 @@ gcc -Wall -Wextra -Werror=unused-result -Wpedantic -Werror -Wmissing-prototypes 
 
 ###	Running the ACVP tests
 
-The static test cases need to be initially fetched from NIST's [ACVP-Server](https://github.com/usnistgov/ACVP-Server) repository, which is instantiated as submodule `test/ACVP-Server`. The Makefile should be able to do this automatically in case the submodule has not been initialized, but this may take some time.
-
-As a prerequisite you will require python3 and [gnu parallel](https://www.gnu.org/software/parallel) (a standard Linux package in most cases), which makes the full test run in less than 1 minute.
-
-During the process, the script [`test/test_slhdsa.py`](test/test_slhdsa.py) will translate the test cases into a shell file `test/acvp_cases.sh`, which then contains test case feed for `xfips205`.
+[`test/acvp_client.py`](test/acvp_client.py) implement ACVP tests and can also be executed through `make test`.
+The ACVP version can be specified by passing the `--version` argument to the [`test/acvp_client.py`](test/acvp_client.py). 
+The static test vectors are automatically fetched from NIST's [ACVP-Server](https://github.com/usnistgov/ACVP-Server) repository on first execution.s
 
 ```console
 $ make test
+python3 test/acvp_client.py
+Using ACVP test vectors version v1.1.0.40
+Running 1248 tests with 16 parallel jobs
+[PASS] keyGen SLH-DSA-SHA2-128s [1] slh_keygen_internal()
 ...
-cat test/acvp_cases.sh | parallel --pipe bash | tee test.log
-[PASS] sigGen SLH-DSA-SHA2-192f [22] slh_sign()
-...
-[PASS] sigGen SLH-DSA-SHAKE-192s [553] hash_slh_sign(SHAKE-128)
+[PASS] sigVer SLH-DSA-SHAKE-256s [497] slh_verify_internal()
+
 === test summary ===
 PASS: 1248
-SKIP: 0
 FAIL: 0
+ALL GOOD!
 ```
 
 ##  Structure of the implementation
@@ -83,10 +93,8 @@ slhdsa-c
 ├── slh_shake.c         # SLH-DSA instantiation for SHA3/SHAKE hash family
 ├── slh_var.h           # internal SLH-DSA context structure
 └── test                # testing stuff (not for application)
-    ├── acvp_cases.sh   # precompiled ACVP test cases
-    ├── ACVP-Server     # optional submodule (contains original test cases)
     ├── Makefile        # makefile for local test tasks
-    ├── test_slhdsa.py  # parses JSON files into acvp_cases.sh
+    ├── acvp_client.py  # ACVP client
     └── xfips205.c      # command-line test harness
 ```
 

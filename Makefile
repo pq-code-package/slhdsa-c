@@ -9,8 +9,8 @@ OBJS	= 	$(CSRC:.c=.o)
 XTEST	?=	xfips205
 XTESTC	?=	test/xfips205.c
 
-CC 		=	gcc
-CFLAGS	:=	-Wall \
+CC      ?= gcc
+CFLAGS  :=	-Wall \
 		-Wextra \
 		-Werror=unused-result \
 		-Wpedantic \
@@ -24,7 +24,8 @@ CFLAGS	:=	-Wall \
 		-O3 \
 		-fomit-frame-pointer \
 		-std=c99 \
-		-pedantic
+		-pedantic \
+		$(CFLAGS)
 
 LDLIBS	+=
 
