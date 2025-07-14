@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
+
+name: Functional tests
+description: Run functional tests
+
+inputs:
+  nix-shell:
+    description: Run in the specified Nix environment if exists
+    default: "ci"
+  custom_shell:
+    description: The shell to use. Only relevant if no nix-shell specified
+    default: "bash"
+  nix-cache:
+    description: Determine whether to enable nix cache
+    default: 'false'
+  nix-verbose:
+    description: Determine wether to suppress nix log or not
+    default: 'false'
+  gh_token:
+    description: Github access token to use
+    required: true
+  cflags:
+    description: CFLAGS to pass to compilation
+    default: ""
+
+runs:
+  using: composite
+  steps:
+      - uses: ./.github/actions/setup-nix
+        with:
+          devShell: ${{ inputs.nix-shell }}
+          cache: ${{ inputs.nix-cache }}
+          verbose: ${{ inputs.nix-verbose }}
+          gh_token: ${{ inputs.gh_token }}
+      - name: Functional tests
+        shell: ${{ env.SHELL }}
+        run: |
+          make clean
+          CFLAGS="${{ inputs.cflags }}" make test
+
