@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
 
 HARNESS_ENTRY = harness
-HARNESS_FILE = sha2_256_init_harness
+HARNESS_FILE = sha2_256_init_h0_harness
 
 # This should be a unique identifier for this proof, and will appear on the
 # Litani dashboard. It can be human-readable and contain spaces if you wish.
-PROOF_UID = sha2_256_init
+PROOF_UID = sha2_256_init_h0
 
 DEFINES +=
 INCLUDES +=
@@ -17,8 +17,8 @@ UNWINDSET +=
 PROOF_SOURCES += $(PROOFDIR)/$(HARNESS_FILE).c
 PROJECT_SOURCES += $(SRCDIR)/sha2_256.c
 
-CHECK_FUNCTION_CONTRACTS=sha2_256_init
-USE_FUNCTION_CONTRACTS=sha2_256_init_h0
+CHECK_FUNCTION_CONTRACTS=sha2_256_init_h0
+USE_FUNCTION_CONTRACTS=
 APPLY_LOOP_CONTRACTS=on
 USE_DYNAMIC_FRAMES=1
 
@@ -26,7 +26,7 @@ USE_DYNAMIC_FRAMES=1
 EXTERNAL_SAT_SOLVER=
 CBMCFLAGS=--smt2
 
-FUNCTION_NAME = sha2_256_init
+FUNCTION_NAME = sha2_256_init_h0
 
 # If this proof is found to consume huge amounts of RAM, you can set the
 # EXPENSIVE variable. With new enough versions of the proof tools, this will
