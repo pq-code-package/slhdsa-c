@@ -47,7 +47,7 @@ static size_t hash_slh_dsa_pad(uint8_t *mp, const uint8_t *m, size_t m_sz,
   const uint8_t shake_256_oid[11] = {0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
                                      0x65, 0x03, 0x04, 0x02, 0x0C};
 
-  if (ctx_sz > 256)
+  if (ctx_sz > 255)
   {
     return 0;
   }
