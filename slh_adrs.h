@@ -108,6 +108,8 @@ static SLH_INLINE void adrs_set_tree_height(slh_var_t *var, uint32_t x)
 
 /* === Set WOTS+ chain address. */
 static SLH_INLINE void adrs_set_chain_address(slh_var_t *var, uint32_t x)
+/* TODO: complete*/
+__contract__()
 {
   var->adrs->u32[6] = rev8_be32(x);
 }
