@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
 
 {
-  description = "mlkem-native";
+  description = "slhdsa-c";
 
   inputs = {
     nixpkgs-2405.url = "github:NixOS/nixpkgs/nixos-24.05";
@@ -58,7 +58,7 @@
 
           packages.linters = util.linters;
           packages.cbmc = util.cbmc_pkgs;
-  
+
           packages.toolchains = util.toolchains;
           packages.toolchains_native = util.toolchains_native;
           packages.toolchain_x86_64 = util.toolchain_x86_64;
