@@ -52,6 +52,9 @@ jobs:
          - name: clang-20
            shell: ci_clang20
            darwin: True
+         - name: clang-21
+           shell: ci_clang21
+           darwin: True
          # CPU flags are not correctly passed to the zig assembler
          # https://github.com/ziglang/zig/issues/23576
          # We therefore only test the C backend
