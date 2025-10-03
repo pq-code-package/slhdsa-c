@@ -23,7 +23,7 @@ jobs:
            name: 'x86_64'
          - runner: macos-latest
            name: 'macos (aarch64)'
-         - runner: macos-13
+         - runner: macos-15-intel
            name: 'macos (x86_64)'
         acvp-version: [v1.1.0.40, v1.1.0.39]
         exclude:
