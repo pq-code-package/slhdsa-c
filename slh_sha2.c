@@ -38,7 +38,9 @@ static void sha2_256_h_msg(slh_var_t *var, uint8_t *h, const uint8_t *r,
     buf[0] = 0;
     buf[1] = ctx_sz & 0xFF;
     sha2_256_update(&sha2, buf, 2);
-    sha2_256_update(&sha2, ctx, ctx_sz);
+    if (ctx_sz > 0) {
+      sha2_256_update(&sha2, ctx, ctx_sz);
+    }
   }
   /* message */
   sha2_256_update(&sha2, m, m_sz);
@@ -101,7 +103,9 @@ static void sha2_512_h_msg(slh_var_t *var, uint8_t *h, const uint8_t *r,
     buf[0] = 0;
     buf[1] = ctx_sz & 0xFF;
     sha2_512_update(&sha2, buf, 2);
-    sha2_512_update(&sha2, ctx, ctx_sz);
+    if (ctx_sz > 0) {
+      sha2_512_update(&sha2, ctx, ctx_sz);
+    }
   }
   sha2_512_update(&sha2, m, m_sz);
   sha2_512_final(&sha2, buf + 2 * n);
@@ -199,7 +203,9 @@ static void sha2_256_prf_msg(slh_var_t *var, uint8_t *h,
     buf[0] = 0;
     buf[1] = ctx_sz & 0xFF;
     sha2_256_update(&sha2, buf, 2);
-    sha2_256_update(&sha2, ctx, ctx_sz);
+    if (ctx_sz > 0) {
+      sha2_256_update(&sha2, ctx, ctx_sz);
+    }
   }
   sha2_256_update(&sha2, m, m_sz);
   sha2_256_final(&sha2, buf);
@@ -246,7 +252,9 @@ static void sha2_512_prf_msg(slh_var_t *var, uint8_t *h,
     buf[0] = 0;
     buf[1] = ctx_sz & 0xFF;
     sha2_512_update(&sha2, buf, 2);
-    sha2_512_update(&sha2, ctx, ctx_sz);
+    if (ctx_sz > 0) {
+      sha2_512_update(&sha2, ctx, ctx_sz);
+    }
   }
   sha2_512_update(&sha2, m, m_sz);
   sha2_512_final(&sha2, buf);

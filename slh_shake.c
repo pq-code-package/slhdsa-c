@@ -33,7 +33,9 @@ static void shake_h_msg(slh_var_t *var, uint8_t *h, const uint8_t *r,
     buf[0] = 0;
     buf[1] = ctx_sz & 0xFF;
     shake_update(&sha3, buf, 2);
-    shake_update(&sha3, ctx, ctx_sz);
+    if (ctx_sz > 0) {
+      shake_update(&sha3, ctx, ctx_sz);
+    }
   }
   shake_update(&sha3, m, m_sz);
 
@@ -83,7 +85,9 @@ static void shake_prf_msg(slh_var_t *var, uint8_t *h, const uint8_t *opt_rand,
     buf[0] = 0;
     buf[1] = ctx_sz & 0xFF;
     shake_update(&sha3, buf, 2);
-    shake_update(&sha3, ctx, ctx_sz);
+    if (ctx_sz > 0) {
+      shake_update(&sha3, ctx, ctx_sz);
+    }
   }
   shake_update(&sha3, m, m_sz);
 
