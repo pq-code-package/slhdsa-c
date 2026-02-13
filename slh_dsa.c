@@ -44,6 +44,10 @@ static SLH_INLINE uint32_t gen_len2(const slh_param_t *prm)
 }
 
 static SLH_INLINE uint32_t get_len(const slh_param_t *prm)
+/* TODO: complete*/
+__contract__(
+  ensures(return_value < SLH_MAX_LEN)
+)
 {
   return get_len1(prm) + gen_len2(prm);
 }
@@ -93,6 +97,8 @@ static SLH_INLINE size_t base_2b(uint32_t *v, const uint8_t *x, uint32_t b,
 
 /* (wots_csum is a shared helper function for algorithms 7 and 8) */
 static void wots_csum(uint32_t *vm, const uint8_t *m, const slh_param_t *prm)
+/* TODO: complete*/
+__contract__()
 {
   uint32_t csum, i, t;
   uint32_t len1, len2;
@@ -119,6 +125,14 @@ static void wots_csum(uint32_t *vm, const uint8_t *m, const slh_param_t *prm)
 }
 
 static size_t wots_sign(slh_var_t *var, uint8_t *sig, const uint8_t *m)
+__contract__(
+  requires(memory_no_alias(var, sizeof(slh_var_t)))
+  requires(memory_no_alias(var->prm, sizeof(slh_param_t)))
+  requires(var->prm->n <= SLH_MAX_N)
+  requires(obeys_contract(var->prm->wots_chain, wots_chain_contract))
+  requires(memory_no_alias(sig, var->prm->n * SLH_MAX_LEN))
+  assigns(object_whole(sig))
+)
 {
   const slh_param_t *prm = var->prm;
   uint32_t i, len;
@@ -129,6 +143,11 @@ static size_t wots_sign(slh_var_t *var, uint8_t *sig, const uint8_t *m)
   wots_csum(vm, m, prm);
 
   for (i = 0; i < len; i++)
+  __loop__(
+    assigns(i, sig)
+    invariant(i <= len)
+    invariant(sig == loop_entry(sig) + i * n)
+  )
   {
     adrs_set_chain_address(var, i);
     prm->wots_chain(var, sig, vm[i]);
