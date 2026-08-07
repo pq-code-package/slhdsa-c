@@ -32,6 +32,11 @@
 /* cassert to avoid confusion with in-built assert */
 #define cassert(x) __CPROVER_assert(x, "cbmc assertion failed")
 #define assume(...) __CPROVER_assume(__VA_ARGS__)
+/* https://diffblue.github.io/cbmc/contracts-function-pointer-predicates.html */
+#define obeys_contract(...) __CPROVER_obeys_contract(__VA_ARGS__)
+
+
+
 
 /***************************************************
  * Macros for "expression" forms that may appear

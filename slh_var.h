@@ -57,5 +57,13 @@ struct slh_var_s
 /* Core signing function (of a randomized digest) with initialized context. */
 size_t slh_do_sign(slh_var_t *var, uint8_t *sig, const uint8_t *digest);
 
+
+/* TODO: find a better place where to put the contract*/
+void wots_chain_contract(slh_var_t *var, uint8_t *tmp, uint32_t s)
+__contract__(
+  requires(memory_no_alias(var, sizeof(slh_var_t)))
+);
+
+
 /* _SLH_VAR_H_ */
 #endif
