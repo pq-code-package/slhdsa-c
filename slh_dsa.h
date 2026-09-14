@@ -35,6 +35,14 @@ extern "C"
   extern const slh_param_t slh_dsa_sha2_256f;
   extern const slh_param_t slh_dsa_shake_256f;
 
+  /* === SP 800-230 parameter sets, limited to 2**24 signatures per key */
+  extern const slh_param_t slh_dsa_sha2_128_24;
+  extern const slh_param_t slh_dsa_shake_128_24;
+  extern const slh_param_t slh_dsa_sha2_192_24;
+  extern const slh_param_t slh_dsa_shake_192_24;
+  extern const slh_param_t slh_dsa_sha2_256_24;
+  extern const slh_param_t slh_dsa_shake_256_24;
+
   /* === SLH_DSA API (_internal and _pure functions.) */
   /* see slh_prehash.h for HashSLH functions */
 

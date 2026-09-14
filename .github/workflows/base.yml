@@ -40,6 +40,9 @@ jobs:
         run: |
           make
           python3 test/acvp_client.py --version ${{ matrix.acvp-version }}
+      - name: Run SP 800-230 test
+        run: |
+          python3 test/acvp_client.py --sp800-230
   quickcheck-c90:
     strategy:
       fail-fast: false
@@ -66,4 +69,5 @@ jobs:
       - name: make quickcheck
         run: |
           CFLAGS=-std=c90 make test
+          CFLAGS=-std=c90 make test-sp800-230
   

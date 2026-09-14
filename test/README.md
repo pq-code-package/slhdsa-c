@@ -33,3 +33,9 @@ The "time" field indicates the number of the core compression function (SHA2-256
 
 In the case of SLH-DSA, there is no "early abort" in signature verification; hence, the values of `vfy_ok` and `vfy_fail` differ only due to the randomization of the process (mainly due to variations in Winternitz chain lengths).
 
+##  SP 800-230
+
+The six parameter sets of the [SP 800-230 initial public draft](https://doi.org/10.6028/NIST.SP.800-230.ipd) are instantiated alongside the twelve FIPS 205 ones, and are the first sets here with a Winternitz parameter other than 16. Support for them is experimental: there are no official ACVP test vectors yet, so [`sp800-230`](sp800-230) carries generated ones, one `internalProjection` file per mode, that `make test-sp800-230` runs through `xfips205`. Both the parameter sets and the vectors will be replaced once the final SP 800-230 is released.
+
+Checking a keyGen or sigGen case means redoing a keygen or a signature, which costs minutes for these parameter sets; the 84 sigVer cases are the cheap ones.
+

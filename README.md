@@ -28,6 +28,8 @@ This code was derived from [SLotH](https://github.com/slh-dsa/sloth) driver code
 | SLH-DSA-SHA2-256f  |  5  | 64 | 128 | 49856 |
 | SLH-DSA-SHAKE-256f |  5  | 64 | 128 | 49856 |
 
+The [SP 800-230 initial public draft](https://doi.org/10.6028/NIST.SP.800-230.ipd) adds six parameter sets, `slh_dsa_{sha2,shake}_{128,192,256}_24`, for use cases that sign at most 2<sup>24</sup> times with a key, which buys a much smaller signature (3856, 7752 and 14944 bytes) and faster verification at the cost of slower signing. Support for them is experimental: there are no official ACVP test vectors yet, so the static ones in [`test/sp800-230`](test/sp800-230) stand in until there are. Both the parameter sets and the vectors will be replaced once the final SP 800-230 is released.
+
 ## Status
 
 slhdsa-c is work in progress. **WE DO NOT CURRENTLY RECOMMEND RELYING ON THIS LIBRARY IN A

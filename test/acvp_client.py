@@ -13,6 +13,10 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+def sp800_230_file(mode):
+    """The generated vectors for the SP 800-230 parameter sets."""
+    return f"test/sp800-230/SLH-DSA-{mode}-SP800-230/internalProjection.json"
+
 # === ACVP file downloading ===
 
 def download_acvp_files(version="v1.1.0.40"):
@@ -124,6 +128,22 @@ def slhdsa_load_siggen(req_fn, res_fn):
             siggen_kat += [qt]
     return siggen_kat
 
+def slhdsa_load_local(int_fn):
+    """Load cases from an internalProjection that has no ACVP prompt."""
+    with open(int_fn) as f:
+        data = json.load(f)
+
+    kat = []
+    for tg in data['testGroups']:
+        for qt in tg['tests']:
+            qt['parameterSet'] = tg['parameterSet']
+            if 'signatureInterface' in tg:
+                qt['signatureInterface'] = tg['signatureInterface']
+            if 'preHash' in tg:
+                qt['preHash'] = tg['preHash'] == 'preHash'
+            kat += [qt]
+    return kat
+
 def slhdsa_load_sigver(req_fn, res_fn, int_fn):
     with open(req_fn) as f:
         sigver_req = json.load(f)
@@ -214,42 +234,8 @@ def run_test_kat(test_type, kat, jobs, xbin='./xfips205'):
 
     return passed, failed
 
-def main():
-    parser = argparse.ArgumentParser(description="SLH-DSA ACVP test runner")
-    parser.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 4,
-                       help="Number of parallel jobs (default: auto-detect CPU cores)")
-    parser.add_argument("--version", "-v", default="v1.1.0.40",
-                       help="ACVP test vector version (default: v1.1.0.40)")
-
-    args = parser.parse_args()
-
-    print(f"Using ACVP test vectors version {args.version}", file=sys.stderr)
-
-    # Download files if needed
-    if not download_acvp_files(args.version):
-        print("Failed to download ACVP test files", file=sys.stderr)
-        return 1
-
-    try:
-        json_path = f"test/.acvp-data/{args.version}/files/"
-
-        keygen_kat = slhdsa_load_keygen(
-            json_path + 'SLH-DSA-keyGen-FIPS205/prompt.json',
-            json_path + 'SLH-DSA-keyGen-FIPS205/expectedResults.json')
-
-        siggen_kat = slhdsa_load_siggen(
-            json_path + 'SLH-DSA-sigGen-FIPS205/prompt.json',
-            json_path + 'SLH-DSA-sigGen-FIPS205/expectedResults.json')
-
-        sigver_kat = slhdsa_load_sigver(
-            json_path + 'SLH-DSA-sigVer-FIPS205/prompt.json',
-            json_path + 'SLH-DSA-sigVer-FIPS205/expectedResults.json',
-            json_path + 'SLH-DSA-sigVer-FIPS205/internalProjection.json')
-
-    except FileNotFoundError as e:
-        print(f"Error: Could not find ACVP JSON files: {e}", file=sys.stderr)
-        return 1
-
+def run_and_report(args, keygen_kat, siggen_kat, sigver_kat):
+    """Run the loaded KATs and print the summary."""
     total_tests = len(keygen_kat) + len(siggen_kat) + len(sigver_kat)
     print(f"Running {total_tests} tests with {args.jobs} parallel jobs", file=sys.stderr)
 
@@ -278,6 +264,54 @@ def main():
         return 0
     else:
         return 1
+
+def main():
+    parser = argparse.ArgumentParser(description="SLH-DSA ACVP test runner")
+    parser.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 4,
+                       help="Number of parallel jobs (default: auto-detect CPU cores)")
+    parser.add_argument("--version", "-v", default="v1.1.0.40",
+                       help="ACVP test vector version (default: v1.1.0.40)")
+    parser.add_argument("--sp800-230", action="store_true",
+                       help="Run the generated SP 800-230 cases instead of the "
+                            "ACVP ones")
+
+    args = parser.parse_args()
+
+    if args.sp800_230:
+        # The only cases for the parameter sets ACVP does not cover.
+        return run_and_report(args,
+                              slhdsa_load_local(sp800_230_file("keyGen")),
+                              slhdsa_load_local(sp800_230_file("sigGen")),
+                              slhdsa_load_local(sp800_230_file("sigVer")))
+
+    print(f"Using ACVP test vectors version {args.version}", file=sys.stderr)
+
+    # Download files if needed
+    if not download_acvp_files(args.version):
+        print("Failed to download ACVP test files", file=sys.stderr)
+        return 1
+
+    try:
+        json_path = f"test/.acvp-data/{args.version}/files/"
+
+        keygen_kat = slhdsa_load_keygen(
+            json_path + 'SLH-DSA-keyGen-FIPS205/prompt.json',
+            json_path + 'SLH-DSA-keyGen-FIPS205/expectedResults.json')
+
+        siggen_kat = slhdsa_load_siggen(
+            json_path + 'SLH-DSA-sigGen-FIPS205/prompt.json',
+            json_path + 'SLH-DSA-sigGen-FIPS205/expectedResults.json')
+
+        sigver_kat = slhdsa_load_sigver(
+            json_path + 'SLH-DSA-sigVer-FIPS205/prompt.json',
+            json_path + 'SLH-DSA-sigVer-FIPS205/expectedResults.json',
+            json_path + 'SLH-DSA-sigVer-FIPS205/internalProjection.json')
+
+    except FileNotFoundError as e:
+        print(f"Error: Could not find ACVP JSON files: {e}", file=sys.stderr)
+        return 1
+
+    return run_and_report(args, keygen_kat, siggen_kat, sigver_kat)
 
 if __name__ == "__main__":
     sys.exit(main())
