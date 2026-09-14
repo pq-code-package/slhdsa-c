@@ -39,6 +39,12 @@ static const slh_param_t *test_iut[] = {&slh_dsa_shake_128s,
                                         &slh_dsa_sha2_192f,
                                         &slh_dsa_sha2_256s,
                                         &slh_dsa_sha2_256f,
+                                        &slh_dsa_shake_128_24,
+                                        &slh_dsa_shake_192_24,
+                                        &slh_dsa_shake_256_24,
+                                        &slh_dsa_sha2_128_24,
+                                        &slh_dsa_sha2_192_24,
+                                        &slh_dsa_sha2_256_24,
                                         NULL};
 
 /* parsed data args */

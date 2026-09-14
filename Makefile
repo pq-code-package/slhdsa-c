@@ -1,7 +1,7 @@
 # Copyright (c) The slhdsa-c project authors
 # SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
 
-.PHONY: test
+.PHONY: test test-sp800-230
 
 CSRC	=	$(wildcard *.c)
 OBJS	= 	$(CSRC:.c=.o)
@@ -37,6 +37,9 @@ $(XTEST):	$(OBJS)
 
 test: $(XTEST)
 	python3 test/acvp_client.py
+
+test-sp800-230: $(XTEST)
+	python3 test/acvp_client.py --sp800-230
 
 clean:
 	$(RM) -rf $(XTEST) $(OBJS) *.rsp *.req *.log
