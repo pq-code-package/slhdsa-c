@@ -107,7 +107,8 @@ extern "C"
 
   /* revert if not big endian */
 
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
+    (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
 /* nop */
 #define rev8_be32(x) (x)
 #else
@@ -120,7 +121,8 @@ static SLH_INLINE uint32_t rev8_be32(uint32_t x)
 }
 #endif
 
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
+    (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
 #define rev8_be64(x) (x)
 #else
 /* RISC-V: grev(x, 0x38) or rev8(x) */
