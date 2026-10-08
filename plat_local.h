@@ -107,31 +107,51 @@ extern "C"
 
   /* revert if not big endian */
 
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  /* unconditional byte swaps */
+
+  /* RISC-V: grev(x, 0x18) or rev8 */
+  static SLH_INLINE uint32_t plat_bswap32(uint32_t x)
+  {
+    return ((x & 0xFF000000) >> 24) | ((x & 0x00FF0000) >> 8) |
+           ((x & 0x0000FF00) << 8) | ((x & 0x000000FF) << 24);
+  }
+
+  /* RISC-V: grev(x, 0x38) or rev8(x) */
+  static SLH_INLINE uint64_t plat_bswap64(uint64_t x)
+  {
+    return (x << 56) | ((x & 0x000000000000FF00LL) << 40) |
+           ((x & 0x0000000000FF0000LL) << 24) |
+           ((x & 0x00000000FF000000LL) << 8) |
+           ((x & 0x000000FF00000000LL) >> 8) |
+           ((x & 0x0000FF0000000000LL) >> 24) |
+           ((x & 0x00FF000000000000LL) >> 40) | (x >> 56);
+  }
+
+#if defined(SLH_SYS_BIG_ENDIAN)
 /* nop */
 #define rev8_be32(x) (x)
-#else
-/* RISC-V: grev(x, 0x18) or rev8 */
-
-static SLH_INLINE uint32_t rev8_be32(uint32_t x)
-{
-  return ((x & 0xFF000000) >> 24) | ((x & 0x00FF0000) >> 8) |
-         ((x & 0x0000FF00) << 8) | ((x & 0x000000FF) << 24);
-}
-#endif
-
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define rev8_be64(x) (x)
+#elif defined(SLH_SYS_LITTLE_ENDIAN)
+#define rev8_be32(x) plat_bswap32(x)
+#define rev8_be64(x) plat_bswap64(x)
 #else
-/* RISC-V: grev(x, 0x38) or rev8(x) */
-static SLH_INLINE uint64_t rev8_be64(uint64_t x)
-{
-  return (x << 56) | ((x & 0x000000000000FF00LL) << 40) |
-         ((x & 0x0000000000FF0000LL) << 24) |
-         ((x & 0x00000000FF000000LL) << 8) | ((x & 0x000000FF00000000LL) >> 8) |
-         ((x & 0x0000FF0000000000LL) >> 24) |
-         ((x & 0x00FF000000000000LL) >> 40) | (x >> 56);
-}
+  /* Endianness could not be detected: use portable code that checks at run
+   * time. Compilers will typically fold this away. */
+  static SLH_INLINE int plat_is_little_endian(void)
+  {
+    const uint16_t one = 1;
+    return *(const uint8_t *)&one == 1;
+  }
+
+  static SLH_INLINE uint32_t rev8_be32(uint32_t x)
+  {
+    return plat_is_little_endian() ? plat_bswap32(x) : x;
+  }
+
+  static SLH_INLINE uint64_t rev8_be64(uint64_t x)
+  {
+    return plat_is_little_endian() ? plat_bswap64(x) : x;
+  }
 #endif
 
   /* rotate left */
