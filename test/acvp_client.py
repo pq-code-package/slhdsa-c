@@ -13,6 +13,9 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+# Check if we need to use a wrapper for execution (e.g. QEMU)
+exec_prefix = os.environ.get("EXEC_WRAPPER", "")
+
 # === ACVP file downloading ===
 
 def download_acvp_files(version="v1.1.0.40"):
@@ -189,7 +192,7 @@ def run_test_kat(test_type, kat, jobs, xbin='./xfips205'):
     failed = 0
 
     def build_command(x):
-        s = xbin
+        s = f'{exec_prefix} {xbin}' if exec_prefix else xbin
         for t in x:
             if x[t] != "":
                 s += f' -{t} "{x[t]}"'
