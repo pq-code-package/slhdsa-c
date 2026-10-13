@@ -9,7 +9,9 @@ OBJS	= 	$(CSRC:.c=.o)
 XTEST	?=	xfips205
 XTESTC	?=	test/xfips205.c
 
+CROSS_PREFIX ?=
 CC      ?= gcc
+CC      := $(CROSS_PREFIX)$(CC)
 CFLAGS  :=	-Wall \
 		-Wextra \
 		-Werror=unused-result \
@@ -36,7 +38,7 @@ $(XTEST):	$(OBJS)
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 test: $(XTEST)
-	python3 test/acvp_client.py
+	EXEC_WRAPPER="$(EXEC_WRAPPER)" python3 test/acvp_client.py
 
 clean:
 	$(RM) -rf $(XTEST) $(OBJS) *.rsp *.req *.log

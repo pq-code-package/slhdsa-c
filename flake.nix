@@ -67,6 +67,7 @@
           packages.toolchain_riscv64 = util.toolchain_riscv64;
           packages.toolchain_riscv32 = util.toolchain_riscv32;
           packages.toolchain_ppc64le = util.toolchain_ppc64le;
+          packages.toolchain_aarch64_be = util.toolchain_aarch64_be;
 
           devShells.default = util.mkShell {
             packages = builtins.attrValues
@@ -105,6 +106,9 @@
           };
           devShells.ci-cross-ppc64le = util.mkShell {
             packages = builtins.attrValues { inherit (config.packages) linters toolchain_ppc64le; };
+          };
+          devShells.ci-cross-aarch64_be = util.mkShell {
+            packages = builtins.attrValues { inherit (config.packages) linters toolchain_aarch64_be; };
           };
           devShells.ci-linter = util.mkShellNoCC {
             packages = builtins.attrValues { inherit (config.packages) linters; };
