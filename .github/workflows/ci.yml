@@ -15,7 +15,7 @@ jobs:
       matrix:
         cflags: [ "-Os", "-O3" ]
         target:
-         - runner: pqcp-arm64
+         - runner: ubuntu-24.04-arm
            name: 'aarch64'
            archflags: ''
          - runner: ubuntu-latest
