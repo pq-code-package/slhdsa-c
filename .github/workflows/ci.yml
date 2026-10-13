@@ -36,13 +36,16 @@ jobs:
            darwin: False
          - name: gcc-11
            shell: ci_gcc11
-           darwin: True
+           # TODO: re-enable on macOS (nix gcc fails with duplicate LC_RPATH)
+           darwin: False
          - name: gcc-13
            shell: ci_gcc13
-           darwin: True
+           # TODO: re-enable on macOS (nix gcc fails with duplicate LC_RPATH)
+           darwin: False
          - name: gcc-14
            shell: ci_gcc14
-           darwin: True
+           # TODO: re-enable on macOS (nix gcc fails with duplicate LC_RPATH)
+           darwin: False
          - name: clang-18
            shell: ci_clang18
            darwin: True
