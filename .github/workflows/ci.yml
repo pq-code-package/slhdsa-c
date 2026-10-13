@@ -15,7 +15,7 @@ jobs:
       matrix:
         cflags: [ "-Os", "-O3" ]
         target:
-         - runner: pqcp-arm64
+         - runner: ubuntu-24.04-arm
            name: 'aarch64'
            archflags: ''
          - runner: ubuntu-latest
@@ -36,13 +36,16 @@ jobs:
            darwin: False
          - name: gcc-11
            shell: ci_gcc11
-           darwin: True
+           # TODO: re-enable on macOS (nix gcc fails with duplicate LC_RPATH)
+           darwin: False
          - name: gcc-13
            shell: ci_gcc13
-           darwin: True
+           # TODO: re-enable on macOS (nix gcc fails with duplicate LC_RPATH)
+           darwin: False
          - name: gcc-14
            shell: ci_gcc14
-           darwin: True
+           # TODO: re-enable on macOS (nix gcc fails with duplicate LC_RPATH)
+           darwin: False
          - name: clang-18
            shell: ci_clang18
            darwin: True
@@ -98,3 +101,27 @@ jobs:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c99 ${{ matrix.cflags }} ${{ matrix.target.archflags }}"
+  cross_tests:
+    name: Cross tests (${{ matrix.target.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+         - runner: ubuntu-latest
+           name: 'aarch64_be'
+           nix_shell: ci-cross-aarch64_be
+           cross_prefix: aarch64_be-none-linux-gnu-
+           exec_wrapper: qemu-aarch64_be
+           cflags: '-static'
+    runs-on: ${{ matrix.target.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: build+functest (cross)
+        uses: ./.github/actions/functest
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          nix-shell: ${{ matrix.target.nix_shell }}
+          nix-cache: 'true'
+          cflags: ${{ matrix.target.cflags }}
+          cross_prefix: ${{ matrix.target.cross_prefix }}
+          exec_wrapper: ${{ matrix.target.exec_wrapper }}

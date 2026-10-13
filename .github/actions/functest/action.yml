@@ -22,6 +22,12 @@ inputs:
   cflags:
     description: CFLAGS to pass to compilation
     default: ""
+  cross_prefix:
+    description: Binary prefix for cross compilation
+    default: ""
+  exec_wrapper:
+    description: Binary execution wrapper (e.g. QEMU)
+    default: ""
 
 runs:
   using: composite
@@ -34,7 +40,11 @@ runs:
           gh_token: ${{ inputs.gh_token }}
       - name: Functional tests
         shell: ${{ env.SHELL }}
+        env:
+          CFLAGS: ${{ inputs.cflags }}
+          CROSS_PREFIX: ${{ inputs.cross_prefix }}
+          EXEC_WRAPPER: ${{ inputs.exec_wrapper }}
         run: |
           make clean
-          CFLAGS="${{ inputs.cflags }}" make test
+          make test
 

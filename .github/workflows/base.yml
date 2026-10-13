@@ -14,10 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        external:
-         - ${{ github.repository_owner != 'pq-code-package' }}
         target:
-         - runner: pqcp-arm64
+         - runner: ubuntu-24.04-arm
            name: 'aarch64'
          - runner: ubuntu-latest
            name: 'x86_64'
@@ -26,12 +24,6 @@ jobs:
          - runner: macos-15-intel
            name: 'macos (x86_64)'
         acvp-version: [v1.1.0.40, v1.1.0.39]
-        exclude:
-          - {external: true,
-             target: {
-               runner: pqcp-arm64,
-               name: 'aarch64'
-             }}
     name: Quickcheck (${{ matrix.target.name }}, ACVP ${{ matrix.acvp-version }})
     runs-on: ${{ matrix.target.runner }}
     steps:
@@ -44,19 +36,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        external:
-         - ${{ github.repository_owner != 'pq-code-package' }}
         target:
-         - runner: pqcp-arm64
+         - runner: ubuntu-24.04-arm
            name: 'aarch64'
          - runner: ubuntu-latest
            name: 'x86_64'
-        exclude:
-          - {external: true,
-             target: {
-               runner: pqcp-arm64,
-               name: 'aarch64'
-             }}
     name: Quickcheck C90 (${{ matrix.target.name }})
     runs-on: ${{ matrix.target.runner }}
     steps:
