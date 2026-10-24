@@ -2,7 +2,7 @@
 # Copyright (c) The slhdsa-c project authors
 # SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
 
-{ pkgs, cbmc, bitwuzla, z3 }:
+{ pkgs, cbmc, bitwuzla, cvc5, z3 }:
 rec {
   glibc-join = p: p.buildPackages.symlinkJoin {
     name = "glibc-join";
@@ -22,6 +22,14 @@ rec {
     then pkgs.clang
     else wrap-gcc pkgs;
 
+  pythonEnv = pkgs.python3.withPackages (ps: with ps; [
+    mpmath
+    sympy
+    pyparsing
+    pyyaml
+    rich
+  ]);
+
   # cross is for determining whether to install the cross toolchain dependencies or not
   _toolchains = { cross ? true }:
     let
@@ -39,18 +47,25 @@ rec {
       #   and won't just work for now
       # - equip all toolchains if cross is explicitly set to true
       # - On some machines, `native-gcc` needed to be evaluated lastly (placed as the last element of the toolchain list), or else would result in environment variables (CC, AR, ...) overriding issue.
-    # pkgs.lib.optionals cross [ pkgs.qemu x86_64-gcc aarch64-gcc riscv64-gcc riscv32-gcc ppc64le-gcc ]
-    pkgs.lib.optionals cross [ pkgs.qemu ]
+    pkgs.lib.optionals cross [ pkgs.qemu pkgs.gcc-arm-embedded x86_64-gcc aarch64-gcc riscv64-gcc riscv32-gcc ppc64le-gcc ]
     ++ pkgs.lib.optionals (cross && pkgs.stdenv.isLinux && pkgs.stdenv.isx86_64) [ aarch64_be-gcc ]
+    # On Darwin, install GCC in addition to Clang. We reuse the exact same
+    # `pkgs.gcc` attribute that the Linux native toolchain wraps (`native-gcc`
+    # = `wrap-gcc pkgs`, whose compiler is `pkgs.gcc.cc`). Because both sides
+    # reference the same package from the flake-locked nixpkgs, the Darwin GCC
+    # version is always identical to the Linux one (do NOT pin a hardcoded
+    # `gccNN` here, or the two platforms could drift apart on a nixpkgs bump).
+    # Note that on Darwin, $CC remains set to "clang" for compilation and testing purposes,
+    # while gcc is used for pre-processing sources for CBMC only.
+    ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.gcc ]
     ++ pkgs.lib.optionals cross [ native-gcc ]
     # git is not available in the nix shell on Darwin. As a workaround we add git as a dependency here.
     # Initially, we expected this to be fixed by https://github.com/NixOS/nixpkgs/pull/353893, but that does not seem to be the case.
     ++ pkgs.lib.optionals (pkgs.stdenv.isDarwin) [ pkgs.git ]
+    ++ [ pythonEnv ]
     ++ builtins.attrValues {
-      inherit (pkgs.python3Packages) sympy pyyaml;
       inherit (pkgs)
-        gnumake
-        python3;
+        gnumake;
     };
 
   # NOTE: idiomatic nix way of properly setting the $CC in a nix shell
@@ -69,42 +84,46 @@ rec {
       packages = [ pkgs.python3 ];
       hardeningDisable = [ "fortify" ];
     };
+  mkShellWithCC_valgrind' = cc:
+    mkShellWithCC cc {
+      packages = [ pkgs.python3 ] ++ pkgs.lib.optionals (!pkgs.stdenv.isDarwin) [ valgrind_varlat ];
+      hardeningDisable = [ "fortify" ];
+    };
 
   # some customized packages
   linters = pkgs.symlinkJoin {
     name = "pqcp-linters";
-    paths = builtins.attrValues {
-      clang-tools = pkgs.clang-tools.overrideAttrs {
-        unwrapped = pkgs.llvmPackages.clang-unwrapped;
-      };
+    paths = builtins.attrValues
+      {
+        inherit (pkgs.llvmPackages)
+          clang-tools
+          bintools;
 
-      inherit (pkgs.llvmPackages)
-        bintools;
-
-      inherit (pkgs)
-        nixpkgs-fmt
-        shfmt;
-
-      inherit (pkgs.python3Packages)
-        mpmath sympy black pyparsing pyyaml;
-    };
+        inherit (pkgs)
+          nixpkgs-fmt
+          shfmt
+          shellcheck
+          actionlint
+          zizmor
+          doxygen
+          ruff;
+      } ++ [ pythonEnv ];
   };
 
-  cbmc_pkgs = pkgs.callPackage ./cbmc {
-    inherit cbmc bitwuzla z3;
-  };
+  cbmc_pkgs = pkgs.callPackage ./cbmc { inherit cbmc bitwuzla cvc5 z3; };
+
+  valgrind_varlat = pkgs.callPackage ./valgrind { };
 
   # Helper function to build individual cross toolchains
   _individual_toolchain = { name, cross_compilers }:
     let
       common_deps = builtins.attrValues
         {
-          inherit (pkgs.python3Packages) sympy pyyaml;
           inherit (pkgs)
             gnumake
-            python3
             qemu;
-        } ++ pkgs.lib.optionals (pkgs.stdenv.isDarwin) [ pkgs.git ];
+        } ++ [ pythonEnv ]
+      ++ pkgs.lib.optionals (pkgs.stdenv.isDarwin) [ pkgs.git ];
     in
     pkgs.symlinkJoin {
       name = "toolchain-${name}";

@@ -6,8 +6,7 @@
   description = "slhdsa-c";
 
   inputs = {
-    nixpkgs-2405.url = "github:NixOS/nixpkgs/nixos-24.05";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     flake-parts = {
@@ -18,18 +17,12 @@
 
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = [ ];
+      imports = [ ./nix/legacy/module.nix ];
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       perSystem = { config, pkgs, system, ... }:
         let
           pkgs-unstable = inputs.nixpkgs-unstable.legacyPackages.${system};
-          pkgs-2405 = inputs.nixpkgs-2405.legacyPackages.${system};
-          util = pkgs.callPackage ./nix/util.nix {
-            # Keep those around in case we want to switch to unstable versions
-            cbmc = pkgs-unstable.cbmc;
-            bitwuzla = pkgs.bitwuzla;
-            z3 = pkgs.z3;
-          };
+          util = pkgs.callPackage ./nix/util.nix { };
           zigWrapCC = zig: pkgs.symlinkJoin {
             name = "zig-wrappers";
             paths = [
@@ -49,17 +42,16 @@
             inherit system;
             overlays = [
               (_:_: {
-                gcc48 = pkgs-2405.gcc48;
-                gcc49 = pkgs-2405.gcc49;
-                gcc7 = pkgs-2405.gcc7;
-                clang_21 = pkgs-unstable.clang_21;
+                inherit (pkgs-unstable) cbmc;
               })
             ];
           };
+          _module.args.util = util;
+          _module.args.zigWrapCC = zigWrapCC;
 
           packages.linters = util.linters;
           packages.cbmc = util.cbmc_pkgs;
-
+          packages.valgrind_varlat = util.valgrind_varlat;
           packages.toolchains = util.toolchains;
           packages.toolchains_native = util.toolchains_native;
           packages.toolchain_x86_64 = util.toolchain_x86_64;
@@ -73,92 +65,70 @@
             packages = builtins.attrValues
               {
                 inherit (config.packages) linters cbmc toolchains_native;
-                inherit (pkgs)
-                  direnv
-                  nix-direnv
-                  zig_0_13;
+                inherit (pkgs) zig_0_13;
               };
           };
 
           devShells.ci = util.mkShell {
             packages = builtins.attrValues { inherit (config.packages) linters toolchains_native; };
           };
-          devShells.ci-bench = util.mkShell {
+          devShells.bench = util.mkShell {
             packages = builtins.attrValues { inherit (config.packages) toolchains_native; };
           };
-          devShells.ci-cbmc = util.mkShell {
-            packages = builtins.attrValues { inherit (config.packages) cbmc toolchains_native; };
+          devShells.cbmc = util.mkShell {
+            packages = builtins.attrValues { inherit (config.packages) cbmc toolchains_native; } ++ [ pkgs.gh ];
           };
-          devShells.ci-cross = util.mkShell {
+          devShells.cross = util.mkShell {
             packages = builtins.attrValues { inherit (config.packages) linters toolchains; };
           };
-          devShells.ci-cross-x86_64 = util.mkShell {
+          devShells.cross-x86_64 = util.mkShell {
             packages = builtins.attrValues { inherit (config.packages) linters toolchain_x86_64; };
           };
-          devShells.ci-cross-aarch64 = util.mkShell {
+          devShells.cross-aarch64 = util.mkShell {
             packages = builtins.attrValues { inherit (config.packages) linters toolchain_aarch64; };
           };
-          devShells.ci-cross-riscv64 = util.mkShell {
+          devShells.cross-riscv64 = util.mkShell {
             packages = builtins.attrValues { inherit (config.packages) linters toolchain_riscv64; };
           };
-          devShells.ci-cross-riscv32 = util.mkShell {
+          devShells.cross-riscv32 = util.mkShell {
             packages = builtins.attrValues { inherit (config.packages) linters toolchain_riscv32; };
           };
-          devShells.ci-cross-ppc64le = util.mkShell {
+          devShells.cross-ppc64le = util.mkShell {
             packages = builtins.attrValues { inherit (config.packages) linters toolchain_ppc64le; };
           };
-          devShells.ci-cross-aarch64_be = util.mkShell {
+          devShells.cross-aarch64_be = util.mkShell {
             packages = builtins.attrValues { inherit (config.packages) linters toolchain_aarch64_be; };
           };
-          devShells.ci-linter = util.mkShellNoCC {
-            packages = builtins.attrValues { inherit (config.packages) linters; };
-          };
-          devShells.ci_clang14 = util.mkShellWithCC' pkgs.clang_14;
-          devShells.ci_clang15 = util.mkShellWithCC' pkgs.clang_15;
-          devShells.ci_clang16 = util.mkShellWithCC' pkgs.clang_16;
-          devShells.ci_clang17 = util.mkShellWithCC' pkgs.clang_17;
-          devShells.ci_clang18 = util.mkShellWithCC' pkgs.clang_18;
-          devShells.ci_clang19 = util.mkShellWithCC' pkgs.clang_19;
-          devShells.ci_clang20 = util.mkShellWithCC' pkgs.clang_20;
-          devShells.ci_clang21 = util.mkShellWithCC' pkgs.clang_21;
 
-          devShells.ci_zig0_12 = util.mkShellWithCC' (zigWrapCC pkgs.zig_0_12);
-          devShells.ci_zig0_13 = util.mkShellWithCC' (zigWrapCC pkgs.zig_0_13);
-          devShells.ci_zig0_14 = util.mkShellWithCC' (zigWrapCC pkgs.zig);
+          devShells.clang19 = util.mkShellWithCC' pkgs.clang_19;
+          devShells.clang20 = util.mkShellWithCC' pkgs.clang_20;
+          devShells.clang21 = util.mkShellWithCC' pkgs.clang_21;
+          devShells.clang22 = util.mkShellWithCC' pkgs.clang_22;
+          # TODO: switch to pkgs.clang_23 once nixpkgs provides the alias and it builds on darwin in 26.05
+          devShells.clang23 = util.mkShellWithCC' pkgs-unstable.llvmPackages_23.clang;
 
-          devShells.ci_gcc48 = util.mkShellWithCC' pkgs.gcc48;
-          devShells.ci_gcc49 = util.mkShellWithCC' pkgs.gcc49;
-          devShells.ci_gcc7 = util.mkShellWithCC' pkgs.gcc7;
-          devShells.ci_gcc11 = util.mkShellWithCC' pkgs.gcc11;
-          devShells.ci_gcc12 = util.mkShellWithCC' pkgs.gcc12;
-          devShells.ci_gcc13 = util.mkShellWithCC' pkgs.gcc13;
-          devShells.ci_gcc14 = util.mkShellWithCC' pkgs.gcc14;
+          devShells.zig0_13 = util.mkShellWithCC' (zigWrapCC pkgs.zig_0_13);
+          devShells.zig0_14 = util.mkShellWithCC' (zigWrapCC pkgs.zig_0_14);
+          devShells.zig0_15 = util.mkShellWithCC' (zigWrapCC pkgs.zig_0_15);
+          devShells.zig0_16 = util.mkShellWithCC' (zigWrapCC pkgs.zig_0_16);
+          devShells.zig0_17 = util.mkShellWithCC' (zigWrapCC pkgs-unstable.zig_0_17);
+
+          devShells.gcc13 = util.mkShellWithCC' pkgs.gcc13;
+          devShells.gcc14 = util.mkShellWithCC' pkgs.gcc14;
+          devShells.gcc15 = util.mkShellWithCC' pkgs.gcc15;
+          # TODO: switch back to pkgs.gcc16 once it builds on darwin in nixpkgs 26.05
+          devShells.gcc16 = util.mkShellWithCC' pkgs-unstable.gcc16;
+
+          # valgrind with a patch for detecting variable-latency instructions
+          devShells.valgrind-varlat_clang19 = util.mkShellWithCC_valgrind' pkgs.clang_19;
+          devShells.valgrind-varlat_clang20 = util.mkShellWithCC_valgrind' pkgs.clang_20;
+          devShells.valgrind-varlat_clang21 = util.mkShellWithCC_valgrind' pkgs.clang_21;
+          devShells.valgrind-varlat_clang22 = util.mkShellWithCC_valgrind' pkgs.clang_22;
+          devShells.valgrind-varlat_clang23 = util.mkShellWithCC_valgrind' pkgs-unstable.llvmPackages_23.clang;
+          devShells.valgrind-varlat_gcc13 = util.mkShellWithCC_valgrind' pkgs.gcc13;
+          devShells.valgrind-varlat_gcc14 = util.mkShellWithCC_valgrind' pkgs.gcc14;
+          devShells.valgrind-varlat_gcc15 = util.mkShellWithCC_valgrind' pkgs.gcc15;
+          devShells.valgrind-varlat_gcc16 = util.mkShellWithCC_valgrind' pkgs-unstable.gcc16;
         };
-      flake = {
-        devShell.x86_64-linux =
-          let
-            pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
-            pkgs-unstable = inputs.nixpkgs-unstable.legacyPackages.x86_64-linux;
-            util = pkgs.callPackage ./nix/util.nix {
-              inherit pkgs;
-              cbmc = pkgs-unstable.cbmc;
-              bitwuzla = pkgs.bitwuzla;
-              z3 = pkgs.z3;
-            };
-          in
-          util.mkShell {
-            packages =
-              [
-                util.linters
-                util.cbmc_pkgs
-                util.toolchains_native
-                pkgs.zig_0_13
-              ];
-          };
-        # The usual flake attributes can be defined here, including system-
-        # agnostic ones like nixosModule and system-enumerating ones, although
-        # those are more easily expressed in perSystem.
-
-      };
     };
 }
