@@ -176,6 +176,27 @@ def slhdsa_load_sigver(req_fn, res_fn, int_fn):
             sigver_kat += [qt]
     return sigver_kat
 
+# === Test selection ===
+
+def select_quick(kat, coverage):
+    """Greedily pick tests until every coverage key has been seen once."""
+    seen = set()
+    selected = []
+    for x in kat:
+        keys = [(i,) + tuple(str(x.get(f)) for f in fields)
+                for i, fields in enumerate(coverage)]
+        if any(k not in seen for k in keys):
+            seen.update(keys)
+            selected += [x]
+    return selected
+
+KEYGEN_COVERAGE = [('parameterSet',)]
+SIGGEN_COVERAGE = [('parameterSet', 'signatureInterface', 'preHash', 'deterministic'),
+                   ('hashAlg',)]
+SIGVER_COVERAGE = [('parameterSet', 'signatureInterface', 'preHash'),
+                   ('parameterSet', 'reason'),
+                   ('hashAlg',)]
+
 # === Test execution ===
 
 def run_command(cmd):
@@ -223,6 +244,9 @@ def main():
                        help="Number of parallel jobs (default: auto-detect CPU cores)")
     parser.add_argument("--version", "-v", default="v1.1.0.40",
                        help="ACVP test vector version (default: v1.1.0.40)")
+    parser.add_argument("--quick", action="store_true",
+                       help="Run a subset of tests covering every parameter set, "
+                            "interface, pre-hash function and failure reason")
 
     args = parser.parse_args()
 
@@ -252,6 +276,11 @@ def main():
     except FileNotFoundError as e:
         print(f"Error: Could not find ACVP JSON files: {e}", file=sys.stderr)
         return 1
+
+    if args.quick:
+        keygen_kat = select_quick(keygen_kat, KEYGEN_COVERAGE)
+        siggen_kat = select_quick(siggen_kat, SIGGEN_COVERAGE)
+        sigver_kat = select_quick(sigver_kat, SIGVER_COVERAGE)
 
     total_tests = len(keygen_kat) + len(siggen_kat) + len(sigver_kat)
     print(f"Running {total_tests} tests with {args.jobs} parallel jobs", file=sys.stderr)

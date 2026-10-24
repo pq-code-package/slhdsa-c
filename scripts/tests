@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+# Copyright (c) The mlkem-native project authors
+# Copyright (c) The slhdsa-c project authors
+# SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
+
+"""Build xfips205 for a test platform and run the ACVP tests."""
+
+import argparse
+import os
+import subprocess
+import sys
+
+#
+# Test platform profiles.
+#
+
+
+def linux_platform(cross_prefix, cflags, exec_wrapper):
+    return {
+        "cross_prefix": cross_prefix,
+        "cflags": cflags,
+        "exec_wrapper": exec_wrapper,
+    }
+
+
+PLATFORMS = {
+    "native": {},
+    "linux/x86_64": linux_platform(
+        "x86_64-unknown-linux-gnu-",
+        "",
+        "qemu-x86_64",
+    ),
+    "linux/aarch64": linux_platform(
+        "aarch64-unknown-linux-gnu-",
+        "",
+        "qemu-aarch64",
+    ),
+    "linux/aarch64_be": linux_platform(
+        "aarch64_be-none-linux-gnu-",
+        "-static",
+        "qemu-aarch64_be",
+    ),
+    "linux/ppc64le": linux_platform(
+        "powerpc64le-unknown-linux-gnu-",
+        "",
+        "qemu-ppc64le",
+    ),
+    "linux/riscv64": linux_platform(
+        "riscv64-unknown-linux-gnu-",
+        "",
+        "qemu-riscv64",
+    ),
+    "linux/riscv32": linux_platform(
+        "riscv32-unknown-linux-gnu-",
+        "",
+        "qemu-riscv32",
+    ),
+}
+
+
+def run(cmd, env):
+    print(f"+ {' '.join(cmd)}", file=sys.stderr, flush=True)
+    return subprocess.run(cmd, env=env).returncode
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--platform", default="native", choices=PLATFORMS.keys(),
+                        help="Test platform (default: native)")
+    parser.add_argument("--cflags", default="",
+                        help="Extra CFLAGS, appended to the platform's")
+    parser.add_argument("--quick", action="store_true",
+                        help="Run a covering subset of the ACVP tests")
+    parser.add_argument("--acvp-version", default=None,
+                        help="ACVP test vector version")
+    parser.add_argument("--jobs", "-j", type=int, default=None,
+                        help="Number of parallel test jobs")
+    args = parser.parse_args()
+
+    platform = PLATFORMS[args.platform]
+    cflags = " ".join(f for f in (platform.get("cflags", ""), args.cflags) if f)
+
+    env = os.environ.copy()
+    env_update = {
+        "CROSS_PREFIX": platform.get("cross_prefix", ""),
+        "EXEC_WRAPPER": platform.get("exec_wrapper", ""),
+        "CFLAGS": cflags,
+    }
+    for variable, value in env_update.items():
+        current = env.get(variable, "")
+        if current != "" and current != value:
+            sys.exit(f"Refusing to overwrite {variable}={current!r} with {value!r}")
+    env.update(env_update)
+
+    # Run from the repository root, wherever we are called from
+    os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+    if run(["make", "clean"], env) != 0 or run(["make", "xfips205"], env) != 0:
+        return 1
+
+    cmd = [sys.executable, "test/acvp_client.py"]
+    if args.quick:
+        cmd += ["--quick"]
+    if args.acvp_version is not None:
+        cmd += ["--version", args.acvp_version]
+    if args.jobs is not None:
+        cmd += ["--jobs", str(args.jobs)]
+    return run(cmd, env)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
