@@ -144,8 +144,73 @@ static uint8_t *hex_data(size_t *data_sz, const char *hex)
   return buf;
 }
 
-const char usage[] = "xfips205 -<acvp inputs> [ keyGen | sigGen | sigVer ]\n";
+const char usage[] =
+    "xfips205 -<acvp inputs> [ keyGen | sigGen | sigVer ]\n"
+    "xfips205 @<file>  (arguments read from file, one per line)\n";
 const char *valid_cmds[] = {"keyGen", "sigGen", "sigVer", NULL};
+
+/* read arguments from a response file, one argument per line */
+/* this avoids command line length limits (e.g. cmd.exe on Windows) */
+
+#define RSP_MAX_SZ (256 * 1024)
+#define RSP_MAX_ARGS 64
+
+static char rsp_buf[RSP_MAX_SZ + 1];
+static char *rsp_argv[RSP_MAX_ARGS + 1];
+
+static int read_rsp_file(const char *fn, char *argv0, char ***argv)
+{
+  FILE *fh;
+  size_t n, l;
+  int argc;
+  char *p, *e;
+
+  fh = fopen(fn, "rb");
+  if (fh == NULL)
+  {
+    perror(fn);
+    exit(1);
+  }
+  n = fread(rsp_buf, 1, RSP_MAX_SZ + 1, fh);
+  fclose(fh);
+  if (n > RSP_MAX_SZ)
+  {
+    fprintf(stderr, "%s: response file too large\n", fn);
+    exit(1);
+  }
+  rsp_buf[n] = '\0';
+
+  argc = 0;
+  rsp_argv[argc++] = argv0;
+  p = rsp_buf;
+  while (p != NULL)
+  {
+    e = strchr(p, '\n');
+    if (e != NULL)
+    {
+      *e++ = '\0';
+    }
+    l = strlen(p);
+    if (l > 0 && p[l - 1] == '\r')
+    {
+      p[l - 1] = '\0';
+    }
+    if (p[0] != '\0')
+    {
+      if (argc >= RSP_MAX_ARGS)
+      {
+        fprintf(stderr, "%s: too many arguments\n", fn);
+        exit(1);
+      }
+      rsp_argv[argc++] = p;
+    }
+    p = e;
+  }
+  rsp_argv[argc] = NULL;
+
+  *argv = rsp_argv;
+  return argc;
+}
 
 int main(int argc, char **argv)
 {
@@ -166,6 +231,11 @@ int main(int argc, char **argv)
   {
     fprintf(stderr, "%s", usage);
     exit(1);
+  }
+
+  if (argc == 2 && argv[1][0] == '@')
+  {
+    argc = read_rsp_file(&argv[1][1], argv[0], &argv);
   }
 
   /* parse arguments */
