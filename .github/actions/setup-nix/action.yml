@@ -62,8 +62,10 @@ runs:
       shell: bash
       run: |
         if [[ -f /.dockerenv ]]; then
+          apt update
           apt install nix -y
         else
+          sudo apt update
           sudo apt install nix -y
         fi
         mkdir -p ~/.config/nix
@@ -82,31 +84,36 @@ runs:
       id: nix-post-check
       continue-on-error: true
       shell: bash -lo pipefail {0}
+      env:
+        CACHE_PREFIX: ${{ inputs.cache_prefix }}
+        NIX_INSTALLED: ${{ steps.nix-pre-check.outputs.installed }}
       run: |
         echo "::group::nix config"
-        if [[ -z "${{ inputs.cache_prefix }}" ]]; then
-          cache_prefix="${{ runner.os }}-${{ runner.arch }}"
+        if [[ -z "$CACHE_PREFIX" ]]; then
+          cache_prefix="$RUNNER_OS-$RUNNER_ARCH"
         else
-          cache_prefix="${{ inputs.cache_prefix }}"
+          cache_prefix="$CACHE_PREFIX"
         fi
 
         echo "cache_prefix=$cache_prefix" >> $GITHUB_OUTPUT
 
-        if [[ "${{ steps.nix-pre-check.outputs.installed }}" == 'false' ]]; then
+        if [[ "$NIX_INSTALLED" == 'false' ]]; then
           sudo chown -R $USER:nixbld /nix
         fi
 
-        nix profile install nixpkgs/nixos-24.11#sqlite
+        # sqlite3 is needed by cache-nix-action to merge the Nix store database.
+        if ! command -v sqlite3 >/dev/null 2>&1; then
+          sudo apt-get update && sudo apt-get install -y sqlite3
+        fi
         nix config show
         echo "::endgroup::"
-    - uses: nix-community/cache-nix-action@dab0514428ae3988852b7787a6d86a6fc571cc9d #v6.0.0
+    - uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
       id: cache
       if: ${{ env.NIX_CACHE_ENABLED != 1 && inputs.cache == 'true' }}
       continue-on-error: true
       with:
-        primary-key: ${{ steps.nix-post-check.outputs.cache_prefix }}-${{ hashFiles('**/*.nix') }}
-        restore-prefixes-first-match: ${{ steps.nix-post-check.outputs.cache_prefix }}
-        gc-max-store-size-linux: 536870912
+        primary-key: ${{ steps.nix-post-check.outputs.cache_prefix }}
+        gc-max-store-size-linux: 3221225472
         purge: ${{ inputs.save_cache == 'true' }}
         save: ${{ inputs.save_cache == 'true' }}
         purge-prefixes: cache-${{ steps.nix-post-check.outputs.cache_prefix }}
@@ -115,18 +122,23 @@ runs:
         token: ${{ inputs.gh_token }}
     - name: Set Shell
       shell: bash -lo pipefail {0}
-      run: |
+      env:
+        CACHE_HIT: ${{ steps.cache.outputs.hit-primary-key }}
+        DEV_SHELL: ${{ inputs.devShell }}
+        INSTALL: ${{ inputs.install }}
+      # NIX_SHELL and SHELL are derived from a caller-supplied dev shell.
+      run: | # zizmor: ignore[github-env]
         echo "::group::set nix shell"
-        if [[ "${{ steps.cache.outputs.hit-primary-key }}" == "true" ]]; then
+        if [[ "$CACHE_HIT" == "true" ]]; then
           echo NIX_CACHE_ENABLED=1 >> $GITHUB_ENV
         fi
 
-        echo NIX_SHELL="${{ inputs.devShell }}" >> $GITHUB_ENV
+        echo NIX_SHELL="$DEV_SHELL" >> $GITHUB_ENV
         nix_extra_flags="${{ inputs.verbose == 'false' && '--quiet' || '' }}"
-        if [[ ${{ inputs.install }} == 'apt' && ! -f /.dockerenv ]]; then
-          echo SHELL="sudo $(which nix) develop $nix_extra_flags .#${{ inputs.devShell }} -c bash -e {0}" >> $GITHUB_ENV
+        if [[ "$INSTALL" == 'apt' && ! -f /.dockerenv ]]; then
+          echo SHELL="sudo $(which nix) develop $nix_extra_flags .#$DEV_SHELL -c bash -e {0}" >> $GITHUB_ENV
         else
-          echo SHELL="$(which nix) develop $nix_extra_flags .#${{ inputs.devShell }} -c bash -e {0}" >> $GITHUB_ENV
+          echo SHELL="$(which nix) develop $nix_extra_flags .#$DEV_SHELL -c bash -e {0}" >> $GITHUB_ENV
         fi
         echo "::endgroup::"
     - name: Prepare nix dev shell
@@ -135,4 +147,7 @@ runs:
     - name: Dependency check
       shell: ${{ env.SHELL }}
       if: inputs.script != ''
-      run: eval ${{ inputs.script }}
+      env:
+        GH_TOKEN: ${{ inputs.gh_token }}
+        SCRIPT: ${{ inputs.script }}
+      run: eval "$SCRIPT"

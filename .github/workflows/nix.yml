@@ -22,7 +22,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: github.event_name != 'workflow_dispatch'
         with:
-          fetch-depth: 0
+          persist-credentials: false
+          # Enough history for changed-files (rebase-merge pushes can be multi-commit)
+          fetch-depth: 100
       - name: Get changed files
         if: github.event_name != 'workflow_dispatch'
         id: changed-files
@@ -30,14 +32,15 @@ jobs:
       - name: Check if dependencies changed
         id: check_run
         shell: bash
+        env:
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           if [[ ${{ (github.event_name == 'workflow_dispatch' && '1') || '0' }} == "1" ]]; then
             run_needed=1
           else
             run_needed=0
-            changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
             dependencies="flake.lock flake.nix nix/"
-            for changed in $changed_files; do
+            for changed in $CHANGED_FILES; do
               for needs in $dependencies; do
                  if [[ "$changed" == "$needs"* ]]; then
                    run_needed=1
@@ -45,11 +48,11 @@ jobs:
               done
             done
           fi
-          echo "run_needed=${run_needed}" >> $GITHUB_OUTPUT
+          echo "run_needed=${run_needed}" >> "$GITHUB_OUTPUT"
 
   build_nix_cache:
     needs: [ check_modified_files ]
-    if: ${{ needs.check_modified_files.outputs.run_needed == '1' }}
+    if: ${{ needs.check_modified_files.outputs.run_needed == '1' && github.ref == 'refs/heads/main' }}
     permissions:
       actions: 'write'
       contents: 'read'
@@ -61,6 +64,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-nix
         with:
           cache: true
@@ -73,7 +78,7 @@ jobs:
             #       and building cross compilation toolchain on macOS runner took
             #       extremely long time
             if [[ ${{ runner.os }} != 'macOS' ]]; then
-              nix develop .#ci-cross --profile tmp-cross
+              nix develop .#cross --profile tmp-cross
               # GH ubuntu-24.04 image tend to run outof space
               if [[ ${{ matrix.runner }} == 'ubuntu-24.04' ]]; then
                 nix-collect-garbage
@@ -117,7 +122,7 @@ jobs:
       - name: Install git
         shell: bash
         run: |
-          if ! which git 2>&1 >/dev/null; then
+          if ! which git >/dev/null 2>&1; then
             ${{ matrix.target.container == '' && 'sudo' || '' }} apt update
             ${{ matrix.target.container == '' && 'sudo' || '' }} apt install git -y
           fi
@@ -125,9 +130,9 @@ jobs:
         shell: bash
         run: |
           git init
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          git remote add origin $GITHUB_SERVER_URL/$GITHUB_REPOSITORY
-          git fetch origin --depth 1 $GITHUB_SHA
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+          git fetch origin --depth 1 "$GITHUB_SHA"
           git checkout FETCH_HEAD
       - uses: ./.github/actions/setup-nix
         if: ${{ matrix.target.container == '' }}

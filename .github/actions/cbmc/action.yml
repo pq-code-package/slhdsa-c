@@ -8,7 +8,7 @@ description: Run CBMC proofs for slhdsa-c
 inputs:
   nix-shell:
     description: Run in the specified Nix environment if exists
-    default: "ci-cbmc"
+    default: "cbmc"
   nix-cache:
     description: Determine whether to enable nix cache
     default: 'true'
@@ -43,7 +43,7 @@ runs:
               - $(nix --version)
               - $(cbmc --version)
               - litani Version $(litani --version)
-              - Cadical Version $(cadical --version)
+              - $(z3 --version)
               - $(bash --version | grep -m1 "")
             EOF
       - name: Run CBMC proofs

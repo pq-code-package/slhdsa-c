@@ -26,37 +26,37 @@ jobs:
            archflags: ''
         compiler:
          - name: gcc-4.8
-           shell: ci_gcc48
+           shell: gcc48
            darwin: False
          - name: gcc-4.9
-           shell: ci_gcc49
+           shell: gcc49
            darwin: False
          - name: gcc-7
-           shell: ci_gcc7
+           shell: gcc7
            darwin: False
          - name: gcc-11
-           shell: ci_gcc11
+           shell: gcc11
            # TODO: re-enable on macOS (nix gcc fails with duplicate LC_RPATH)
            darwin: False
          - name: gcc-13
-           shell: ci_gcc13
+           shell: gcc13
            # TODO: re-enable on macOS (nix gcc fails with duplicate LC_RPATH)
            darwin: False
          - name: gcc-14
-           shell: ci_gcc14
+           shell: gcc14
            # TODO: re-enable on macOS (nix gcc fails with duplicate LC_RPATH)
            darwin: False
          - name: clang-18
-           shell: ci_clang18
+           shell: clang18
            darwin: True
          - name: clang-19
-           shell: ci_clang19
+           shell: clang19
            darwin: True
          - name: clang-20
-           shell: ci_clang20
+           shell: clang20
            darwin: True
          - name: clang-21
-           shell: ci_clang21
+           shell: clang21
            darwin: True
          # CPU flags are not correctly passed to the zig assembler
          # https://github.com/ziglang/zig/issues/23576
@@ -66,13 +66,13 @@ jobs:
          # only those examples not involving native code.
          # TODO: compiling with zig leads to test failures right now - needs to be revisited.
          #- name: zig-0.12
-         #  shell: ci_zig0_12
+         #  shell: zig0_12
          #  darwin: True
          #- name: zig-0.13
-         #  shell: ci_zig0_13
+         #  shell: zig0_13
          #  darwin: True
          #- name: zig-0.14
-         #  shell: ci_zig0_14
+         #  shell: zig0_14
          #  darwin: True
         exclude:
           # Exclude old GCC versions from macOS and aarch64 runners
@@ -109,7 +109,7 @@ jobs:
         target:
          - runner: ubuntu-latest
            name: 'aarch64_be'
-           nix_shell: ci-cross-aarch64_be
+           nix_shell: cross-aarch64_be
            cross_prefix: aarch64_be-none-linux-gnu-
            exec_wrapper: qemu-aarch64_be
            cflags: '-static'
