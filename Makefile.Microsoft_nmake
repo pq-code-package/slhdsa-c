@@ -1,0 +1,22 @@
+# Copyright (c) The slhdsa-c project authors
+# SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
+
+CFLAGS = /nologo /O2 /D_CRT_SECURE_NO_WARNINGS
+
+OBJ_FILES = sha2_256.obj sha2_512.obj sha3_api.obj sha3_f1600.obj \
+            slh_dsa.obj slh_prehash.obj slh_sha2.obj slh_shake.obj
+
+xfips205.exe: $(OBJ_FILES) test\xfips205.obj
+    $(CC) $(CFLAGS) /Fexfips205.exe $** /link
+
+test\xfips205.obj: test\xfips205.c
+    $(CC) $(CFLAGS) /c /Fotest\xfips205.obj test\xfips205.c
+
+test: xfips205.exe
+    python test\acvp_client.py
+
+quickcheck: xfips205.exe
+    python test\acvp_client.py --quick
+
+clean:
+    -DEL /Q *.obj test\*.obj xfips205.exe
