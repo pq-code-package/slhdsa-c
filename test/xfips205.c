@@ -235,6 +235,12 @@ int main(int argc, char **argv)
     }
   }
 
+  if (cmd == NULL)
+  {
+    fprintf(stderr, "%s: no command specified\n", argv[0]);
+    exit(1);
+  }
+
   /* === find the parameter set */
   slh_name = find_par("parameterSet");
   if (slh_name == NULL)
@@ -372,8 +378,6 @@ int main(int argc, char **argv)
     {
       free(sk);
     }
-
-    arg_ok = 1;
   }
   else if (strcmp(cmd, "sigGen") == 0)
   {
@@ -447,7 +451,12 @@ int main(int argc, char **argv)
     }
 
     iface = find_par("signatureInterface");
-    if (iface != NULL && strcmp(iface, "internal") == 0)
+    if (iface == NULL)
+    {
+      fprintf(stderr, "sigGen: missing signatureInterface\n");
+      exit(-1);
+    }
+    if (strcmp(iface, "internal") == 0)
     {
       sprintf(test_func, "slh_sign_internal()");
 
@@ -530,7 +539,6 @@ int main(int argc, char **argv)
     {
       free(sig_out);
     }
-    arg_ok = 1;
 
     /* === sigVer */
   }
@@ -559,7 +567,6 @@ int main(int argc, char **argv)
     passed = find_par("testPassed");
     prehash = find_par("preHash");
     reason = find_par("reason");
-    prehash = find_par("preHash");
 
     if (prehash != NULL)
     {
