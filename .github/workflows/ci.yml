@@ -107,24 +107,41 @@ jobs:
       fail-fast: false
       matrix:
         target:
+         - runner: ubuntu-24.04-arm
+           name: 'x86_64'
+           nix_shell: cross-x86_64
+           platform: linux/x86_64
+         - runner: ubuntu-latest
+           name: 'aarch64'
+           nix_shell: cross-aarch64
+           platform: linux/aarch64
          - runner: ubuntu-latest
            name: 'aarch64_be'
            nix_shell: cross-aarch64_be
-           cross_prefix: aarch64_be-none-linux-gnu-
-           exec_wrapper: qemu-aarch64_be
-           cflags: '-static'
+           platform: linux/aarch64_be
+         - runner: ubuntu-24.04-arm
+           name: 'ppc64le'
+           nix_shell: cross-ppc64le
+           platform: linux/ppc64le
+         - runner: ubuntu-24.04-arm
+           name: 'riscv64'
+           nix_shell: cross-riscv64
+           platform: linux/riscv64
+         - runner: ubuntu-24.04-arm
+           name: 'riscv32'
+           nix_shell: cross-riscv32
+           platform: linux/riscv32
     runs-on: ${{ matrix.target.runner }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: build+functest (cross)
+      - name: build+functest (cross, quick)
         uses: ./.github/actions/functest
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.target.nix_shell }}
           nix-cache: 'true'
-          cflags: ${{ matrix.target.cflags }}
-          cross_prefix: ${{ matrix.target.cross_prefix }}
-          exec_wrapper: ${{ matrix.target.exec_wrapper }}
+          platform: ${{ matrix.target.platform }}
+          quick: 'true'
   sanitizer_tests:
     name: Sanitizer tests (${{ matrix.target.name }})
     strategy:
