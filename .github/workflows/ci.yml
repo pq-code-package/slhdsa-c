@@ -125,3 +125,29 @@ jobs:
           cflags: ${{ matrix.target.cflags }}
           cross_prefix: ${{ matrix.target.cross_prefix }}
           exec_wrapper: ${{ matrix.target.exec_wrapper }}
+  sanitizer_tests:
+    name: Sanitizer tests (${{ matrix.target.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+         - runner: ubuntu-latest
+           name: 'x86_64'
+           nix_shell: ci
+         - runner: ubuntu-24.04-arm
+           name: 'aarch64'
+           nix_shell: ci
+         - runner: macos-latest
+           name: 'macos'
+           # clang < 22 ASan runtime deadlocks at startup on macOS 26
+           # (llvm/llvm-project#191039)
+           nix_shell: clang22
+    runs-on: ${{ matrix.target.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: build+functest (ASan+UBSan)
+        uses: ./.github/actions/functest
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          nix-shell: ${{ matrix.target.nix_shell }}
+          cflags: "-fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all"

@@ -50,4 +50,24 @@ jobs:
       - name: make quickcheck
         run: |
           CFLAGS=-std=c90 make test
-  
+
+  scan-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+         - runner: ubuntu-24.04-arm
+           name: 'aarch64'
+         - runner: ubuntu-latest
+           name: 'x86_64'
+    name: scan-build (${{ matrix.target.name }})
+    runs-on: ${{ matrix.target.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install scan-build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tools clang
+      - name: scan-build
+        run: |
+          scan-build --status-bugs make
