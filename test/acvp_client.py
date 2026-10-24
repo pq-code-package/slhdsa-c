@@ -9,12 +9,14 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 # Check if we need to use a wrapper for execution (e.g. QEMU)
 exec_prefix = os.environ.get("EXEC_WRAPPER", "")
+exec_prefix = exec_prefix.split(" ") if exec_prefix != "" else []
 
 # === ACVP file downloading ===
 
@@ -199,30 +201,39 @@ SIGVER_COVERAGE = [('parameterSet', 'signatureInterface', 'preHash'),
 
 # === Test execution ===
 
-def run_command(cmd):
-    """Run a single test command and return result."""
+def run_test(test_type, x, xbin):
+    """Run a single test and return result.
+
+    The inputs are passed to xfips205 in a response file (one argument per
+    line), as signatures exceed the command line length limit on Windows."""
+    args = []
+    for t in x:
+        if x[t] != "":
+            args += [f'-{t}', str(x[t])]
+    args += [test_type]
+
+    rsp = None
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        with tempfile.NamedTemporaryFile('w', suffix='.rsp', delete=False) as f:
+            rsp = f.name
+            f.write('\n'.join(args) + '\n')
+        result = subprocess.run(exec_prefix + [xbin, f'@{rsp}'],
+                                capture_output=True, text=True)
         return (result.returncode, result.stdout, result.stderr)
     except Exception as e:
         return (-1, "", str(e))
+    finally:
+        if rsp is not None:
+            os.unlink(rsp)
 
-def run_test_kat(test_type, kat, jobs, xbin='./xfips205'):
+def run_test_kat(test_type, kat, jobs, xbin="./xfips205"):
     """Run test KAT in parallel."""
     passed = 0
     failed = 0
 
-    def build_command(x):
-        s = f'{exec_prefix} {xbin}' if exec_prefix else xbin
-        for t in x:
-            if x[t] != "":
-                s += f' -{t} "{x[t]}"'
-        s += f' {test_type}'
-        return s
-
     # Run tests in parallel
     with ThreadPoolExecutor(max_workers=jobs) as executor:
-        futures = [executor.submit(run_command, build_command(x)) for x in kat]
+        futures = [executor.submit(run_test, test_type, x, xbin) for x in kat]
 
         for future in as_completed(futures):
             returncode, stdout, stderr = future.result()
