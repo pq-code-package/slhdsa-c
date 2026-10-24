@@ -67,6 +67,14 @@ FAIL: 0
 ALL GOOD!
 ```
 
+`--quick` runs a subset of the tests that still covers every parameter set, signature interface, pre-hash function and sigVer failure reason.
+
+[`scripts/tests`](scripts/tests) builds and runs the tests for a given platform, e.g. under QEMU in the corresponding nix shell:
+
+```console
+$ nix develop .#cross-riscv32 -c ./scripts/tests --platform=linux/riscv32 --quick
+```
+
 ##  Structure of the implementation
 
 External applications should include `slh_dsa.h` and optionally `slh_prehash.h` if prehash modes are required, and link the files in the `slhdsa-c` directory (not `test`).
