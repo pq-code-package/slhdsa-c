@@ -267,11 +267,18 @@ int main(int argc, char **argv)
   tcid = find_par("tcId");
   if (tcid == NULL)
   {
-    sprintf(test_id, "%s %s", cmd, prm->alg_id);
+    strcpy(test_id, cmd);
+    strcat(test_id, " ");
+    strcat(test_id, prm->alg_id);
   }
   else
   {
-    sprintf(test_id, "%s %s [%s]", cmd, prm->alg_id, tcid);
+    strcpy(test_id, cmd);
+    strcat(test_id, " ");
+    strcat(test_id, prm->alg_id);
+    strcat(test_id, " [");
+    strncat(test_id, tcid, 64);
+    strcat(test_id, "]");
   }
 
   /* === keyGen */
@@ -334,7 +341,7 @@ int main(int argc, char **argv)
       }
     }
 
-    sprintf(test_func, "slh_keygen_internal()");
+    strcpy(test_func, "slh_keygen_internal()");
 
     /* run key generation */
     slh_keygen_internal(sk_out, pk_out, sk_seed, sk_prf, pk_seed, prm);
@@ -458,7 +465,7 @@ int main(int argc, char **argv)
     }
     if (strcmp(iface, "internal") == 0)
     {
-      sprintf(test_func, "slh_sign_internal()");
+      strcpy(test_func, "slh_sign_internal()");
 
       /* Algorithm 19: slh_sign_internal(M, SK, addrnd) */
       sig_out_sz = slh_sign_internal(sig_out, msg, msg_sz, sk, addrnd, prm);
@@ -467,7 +474,7 @@ int main(int argc, char **argv)
     {
       if (pure)
       {
-        sprintf(test_func, "slh_sign()");
+        strcpy(test_func, "slh_sign()");
 
         /* Algorithm 22: slh_sign(M, ctx, SK) */
         sig_out_sz =
@@ -481,7 +488,9 @@ int main(int argc, char **argv)
           fprintf(stderr, "sigGen: missing hashAlg\n");
           exit(-1);
         }
-        sprintf(test_func, "hash_slh_sign(%s)", hashalg);
+        strcpy(test_func, "hash_slh_sign(");
+        strncat(test_func, hashalg, 64);
+        strcat(test_func, ")");
 
         /* Algorithm 23:  hash_slh_sign(M, ctx, PH, SK) */
         sig_out_sz = hash_slh_sign(sig_out, msg, msg_sz, ctx, ctx_sz, hashalg,
@@ -619,7 +628,7 @@ int main(int argc, char **argv)
 
     if (strcmp(iface, "internal") == 0)
     {
-      sprintf(test_func, "slh_verify_internal()");
+      strcpy(test_func, "slh_verify_internal()");
 
       /* Algorithm 20: slh_verify_internal(M, SIG, PK) */
       res = slh_verify_internal(msg, msg_sz, sig, sig_sz, pk, prm);
@@ -628,7 +637,7 @@ int main(int argc, char **argv)
     {
       if (pure)
       {
-        sprintf(test_func, "slh_verify()");
+        strcpy(test_func, "slh_verify()");
 
         /* Algorithm 24 slh_verify(M, SIG, var, PK) */
         res = slh_verify(msg, msg_sz, sig, sig_sz, ctx, ctx_sz, pk, prm);
@@ -641,7 +650,9 @@ int main(int argc, char **argv)
           fprintf(stderr, "sigVer: missing hashAlg\n");
           exit(-1);
         }
-        sprintf(test_func, "hash_slh_verify(%s)", hashalg);
+        strcpy(test_func, "hash_slh_verify(");
+        strncat(test_func, hashalg, 64);
+        strcat(test_func, ")");
 
         /* Algorithm 25: hash_slh_verify(M, SIG, ctx, PH, PK) */
         res = hash_slh_verify(msg, msg_sz, sig, sig_sz, ctx, ctx_sz, hashalg,
