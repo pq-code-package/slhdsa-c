@@ -69,8 +69,12 @@ def main():
                         help="Test platform (default: native)")
     parser.add_argument("--cflags", default="",
                         help="Extra CFLAGS, appended to the platform's")
-    parser.add_argument("--quick", action="store_true",
-                        help="Run a covering subset of the ACVP tests")
+    parser.add_argument("--exec-wrapper", default=None,
+                        help="Binary execution wrapper (e.g. valgrind); "
+                             "takes precedence over the platform's")
+    parser.add_argument("--coverage", default=None,
+                        choices=["full", "quick", "minimal"],
+                        help="ACVP test coverage (see test/acvp_client.py)")
     parser.add_argument("--acvp-version", default=None,
                         help="ACVP test vector version")
     parser.add_argument("--jobs", "-j", type=int, default=None,
@@ -83,7 +87,8 @@ def main():
     env = os.environ.copy()
     env_update = {
         "CROSS_PREFIX": platform.get("cross_prefix", ""),
-        "EXEC_WRAPPER": platform.get("exec_wrapper", ""),
+        "EXEC_WRAPPER": (args.exec_wrapper if args.exec_wrapper is not None
+                         else platform.get("exec_wrapper", "")),
         "CFLAGS": cflags,
     }
     for variable, value in env_update.items():
@@ -99,8 +104,8 @@ def main():
         return 1
 
     cmd = [sys.executable, "test/acvp_client.py"]
-    if args.quick:
-        cmd += ["--quick"]
+    if args.coverage is not None:
+        cmd += ["--coverage", args.coverage]
     if args.acvp_version is not None:
         cmd += ["--version", args.acvp_version]
     if args.jobs is not None:

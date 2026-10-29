@@ -16,7 +16,7 @@ test: xfips205.exe
     python test\acvp_client.py
 
 quickcheck: xfips205.exe
-    python test\acvp_client.py --quick
+    python test\acvp_client.py --coverage=quick
 
 clean:
     -DEL /Q *.obj test\*.obj xfips205.exe

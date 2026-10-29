@@ -161,28 +161,28 @@ jobs:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
       - name: native build+functest (C90)
         uses: ./.github/actions/functest
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c90 ${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
       - name: native build+functest (C99)
         uses: ./.github/actions/functest
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c99 ${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
       - name: native build+functest (C11)
         uses: ./.github/actions/functest
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c11 ${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
       - name: native build+functest (C17)
         if: ${{ matrix.compiler.family == 'zig' || (matrix.compiler.family == 'gcc' && matrix.compiler.version >= 8) || (matrix.compiler.family == 'clang' && matrix.compiler.version >= 7) }}
         uses: ./.github/actions/functest
@@ -190,7 +190,7 @@ jobs:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c17 ${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
       - name: native build+functest (C23)
         if: ${{ (matrix.compiler.family == 'zig' && matrix.compiler.version >= 0.14) || (matrix.compiler.family == 'gcc' && matrix.compiler.version >= 14) || (matrix.compiler.family == 'clang' && matrix.compiler.version >= 18) }}
         uses: ./.github/actions/functest
@@ -198,7 +198,7 @@ jobs:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c23 ${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
 
   compiler_tests_macos:
     name: Compiler tests (${{ matrix.compiler.family }}-${{ matrix.compiler.version }}, macos, ${{ matrix.cflags }})
@@ -270,28 +270,28 @@ jobs:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
       - name: native build+functest (C90)
         uses: ./.github/actions/functest
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c90 ${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
       - name: native build+functest (C99)
         uses: ./.github/actions/functest
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c99 ${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
       - name: native build+functest (C11)
         uses: ./.github/actions/functest
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c11 ${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
       - name: native build+functest (C17)
         if: ${{ matrix.compiler.family == 'zig' || (matrix.compiler.family == 'gcc' && matrix.compiler.version >= 8) || (matrix.compiler.family == 'clang' && matrix.compiler.version >= 7) }}
         uses: ./.github/actions/functest
@@ -299,7 +299,7 @@ jobs:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c17 ${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
       - name: native build+functest (C23)
         if: ${{ (matrix.compiler.family == 'zig' && matrix.compiler.version >= 0.14) || (matrix.compiler.family == 'gcc' && matrix.compiler.version >= 14) || (matrix.compiler.family == 'clang' && matrix.compiler.version >= 18) }}
         uses: ./.github/actions/functest
@@ -307,7 +307,7 @@ jobs:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           nix-shell: ${{ matrix.compiler.shell }}
           cflags: "-std=c23 ${{ matrix.cflags }}"
-          quick: 'true'
+          coverage: quick
 
   compiler_tests_windows_mingw:
     name: Compiler tests (Mingw-w64 ${{ matrix.mingw-version }}, x86_64)
@@ -343,4 +343,4 @@ jobs:
         run: |
           gcc --version
           CC=gcc make xfips205
-          python test/acvp_client.py --quick
+          python test/acvp_client.py --coverage=quick
