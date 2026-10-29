@@ -344,3 +344,101 @@ jobs:
           gcc --version
           CC=gcc make xfips205
           python test/acvp_client.py --coverage=quick
+
+  check-ct-varlat-legacy:
+    name: Constant-time test ${{ matrix.compiler.family }}-${{ matrix.compiler.version }} ${{ matrix.system }}
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'legacy-compiler-tests'))
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        system: [ubuntu-latest, ubuntu-24.04-arm]
+        compiler:
+          - { family: gcc,   version: "4.8", shell: gcc48 }
+          - { family: gcc,   version: "4.9", shell: gcc49 }
+          - { family: gcc,   version: "6",   shell: gcc6 }
+          - { family: gcc,   version: "7",   shell: gcc7 }
+          - { family: gcc,   version: "8",   shell: gcc8 }
+          - { family: gcc,   version: "9",   shell: gcc9 }
+          - { family: gcc,   version: "10",  shell: gcc10 }
+          - { family: gcc,   version: "11",  shell: gcc11 }
+          - { family: gcc,   version: "12",  shell: gcc12 }
+          - { family: gcc,   version: "13",  shell: gcc13 }
+          - { family: gcc,   version: "14",  shell: gcc14 }
+          - { family: gcc,   version: "15",  shell: gcc15 }
+          - { family: gcc,   version: "16",  shell: gcc16 }
+          - { family: clang, version: "6",   shell: clang6 }
+          - { family: clang, version: "7",   shell: clang7 }
+          - { family: clang, version: "8",   shell: clang8 }
+          - { family: clang, version: "9",   shell: clang9 }
+          - { family: clang, version: "10",  shell: clang10 }
+          - { family: clang, version: "11",  shell: clang11 }
+          - { family: clang, version: "12",  shell: clang12 }
+          - { family: clang, version: "13",  shell: clang13 }
+          - { family: clang, version: "14",  shell: clang14 }
+          - { family: clang, version: "15",  shell: clang15 }
+          - { family: clang, version: "16",  shell: clang16 }
+          - { family: clang, version: "17",  shell: clang17 }
+          - { family: clang, version: "18",  shell: clang18 }
+          - { family: clang, version: "19",  shell: clang19 }
+          - { family: clang, version: "20",  shell: clang20 }
+          - { family: clang, version: "21",  shell: clang21 }
+          - { family: clang, version: "22",  shell: clang22 }
+          - { family: clang, version: "23",  shell: clang23 }
+    runs-on: ${{ matrix.system }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup nix
+        uses: ./.github/actions/setup-shell
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          nix-shell: "valgrind-varlat_${{ matrix.compiler.shell }}"
+          nix-cache: true
+      - name: Build and run test (-Oz)
+        # -Oz got introduced in gcc12
+        if: ${{ matrix.compiler.family != 'gcc' || matrix.compiler.version >= 12 }}
+        uses: ./.github/actions/ct-test
+        with:
+          cflags: -Oz
+          valgrind_flags: --variable-latency-errors=yes
+      - name: Build and run test (-Os)
+        uses: ./.github/actions/ct-test
+        with:
+          cflags: -Os
+          valgrind_flags: --variable-latency-errors=yes
+      - name: Build and run test (-O3)
+        uses: ./.github/actions/ct-test
+        with:
+          cflags: -O3
+          valgrind_flags: --variable-latency-errors=yes
+      - name: Build and run test (-Ofast)
+        # -Ofast got deprecated in clang19; -O3 -ffast-math should be used instead
+        if: ${{ !(matrix.compiler.family == 'clang' && matrix.compiler.version >= 19) }}
+        uses: ./.github/actions/ct-test
+        with:
+          cflags: -Ofast
+          valgrind_flags: --variable-latency-errors=yes
+      - name: Build and run test (-O3 -ffast-math)
+        uses: ./.github/actions/ct-test
+        with:
+          cflags: -O3 -ffast-math
+          valgrind_flags: --variable-latency-errors=yes
+      - name: Build and run test (-O2)
+        uses: ./.github/actions/ct-test
+        with:
+          cflags: -O2
+          valgrind_flags: --variable-latency-errors=yes
+      - name: Build and run test (-O1)
+        uses: ./.github/actions/ct-test
+        with:
+          cflags: -O1
+          valgrind_flags: --variable-latency-errors=yes
+      - name: Build and run test (-O0)
+        uses: ./.github/actions/ct-test
+        with:
+          cflags: -O0
+          valgrind_flags: --variable-latency-errors=yes
