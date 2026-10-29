@@ -180,7 +180,7 @@ def slhdsa_load_sigver(req_fn, res_fn, int_fn):
 
 # === Test selection ===
 
-def select_quick(kat, coverage):
+def select_coverage(kat, coverage):
     """Greedily pick tests until every coverage key has been seen once."""
     seen = set()
     selected = []
@@ -192,12 +192,24 @@ def select_quick(kat, coverage):
             selected += [x]
     return selected
 
-KEYGEN_COVERAGE = [('parameterSet',)]
-SIGGEN_COVERAGE = [('parameterSet', 'signatureInterface', 'preHash', 'deterministic'),
-                   ('hashAlg',)]
-SIGVER_COVERAGE = [('parameterSet', 'signatureInterface', 'preHash'),
-                   ('parameterSet', 'reason'),
-                   ('hashAlg',)]
+# Test coverage: coverage keys for (keyGen, sigGen, sigVer), or None for all tests
+COVERAGE = {
+    # all tests
+    'full': None,
+    # every parameter set, signature interface, pre-hash function and
+    # sigVer failure reason
+    'quick': ([('parameterSet',)],
+              [('parameterSet', 'signatureInterface', 'preHash', 'deterministic'),
+               ('hashAlg',)],
+              [('parameterSet', 'signatureInterface', 'preHash'),
+               ('parameterSet', 'reason'),
+               ('hashAlg',)]),
+    # every parameter set (and deterministic/randomized signing); for slow
+    # configurations such as valgrind
+    'minimal': ([('parameterSet',)],
+                [('parameterSet', 'deterministic')],
+                [('parameterSet',)]),
+}
 
 # === Test execution ===
 
@@ -255,9 +267,11 @@ def main():
                        help="Number of parallel jobs (default: auto-detect CPU cores)")
     parser.add_argument("--version", "-v", default="v1.1.0.40",
                        help="ACVP test vector version (default: v1.1.0.40)")
-    parser.add_argument("--quick", action="store_true",
-                       help="Run a subset of tests covering every parameter set, "
-                            "interface, pre-hash function and failure reason")
+    parser.add_argument("--coverage", default="full", choices=COVERAGE.keys(),
+                       help="Test coverage: all tests (full), a subset covering every "
+                            "parameter set, interface, pre-hash function and "
+                            "failure reason (quick), or one test per parameter "
+                            "set (minimal) (default: full)")
 
     args = parser.parse_args()
 
@@ -288,10 +302,11 @@ def main():
         print(f"Error: Could not find ACVP JSON files: {e}", file=sys.stderr)
         return 1
 
-    if args.quick:
-        keygen_kat = select_quick(keygen_kat, KEYGEN_COVERAGE)
-        siggen_kat = select_quick(siggen_kat, SIGGEN_COVERAGE)
-        sigver_kat = select_quick(sigver_kat, SIGVER_COVERAGE)
+    coverage = COVERAGE[args.coverage]
+    if coverage is not None:
+        keygen_kat = select_coverage(keygen_kat, coverage[0])
+        siggen_kat = select_coverage(siggen_kat, coverage[1])
+        sigver_kat = select_coverage(sigver_kat, coverage[2])
 
     total_tests = len(keygen_kat) + len(siggen_kat) + len(sigver_kat)
     print(f"Running {total_tests} tests with {args.jobs} parallel jobs", file=sys.stderr)

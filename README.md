@@ -67,12 +67,12 @@ FAIL: 0
 ALL GOOD!
 ```
 
-`--quick` runs a subset of the tests that still covers every parameter set, signature interface, pre-hash function and sigVer failure reason.
+`--coverage=quick` runs a subset of the tests that still covers every parameter set, signature interface, pre-hash function and sigVer failure reason; `--coverage=minimal` runs one test per parameter set, e.g. for testing under valgrind.
 
 [`scripts/tests`](scripts/tests) builds and runs the tests for a given platform, e.g. under QEMU in the corresponding nix shell:
 
 ```console
-$ nix develop .#cross-riscv32 -c ./scripts/tests --platform=linux/riscv32 --quick
+$ nix develop .#cross-riscv32 -c ./scripts/tests --platform=linux/riscv32 --coverage=quick
 ```
 
 ##  Structure of the implementation

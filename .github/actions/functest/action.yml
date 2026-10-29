@@ -25,9 +25,9 @@ inputs:
   platform:
     description: Test platform profile (see scripts/tests)
     default: "native"
-  quick:
-    description: Run a covering subset of the ACVP tests
-    default: 'false'
+  coverage:
+    description: ACVP test coverage (full | quick | minimal)
+    default: 'full'
 
 runs:
   using: composite
@@ -43,7 +43,7 @@ runs:
         env:
           TEST_CFLAGS: ${{ inputs.cflags }}
           TEST_PLATFORM: ${{ inputs.platform }}
-          TEST_QUICK: ${{ inputs.quick == 'true' && '--quick' || '' }}
+          TEST_COVERAGE: ${{ inputs.coverage }}
         run: |
-          ./scripts/tests --platform="$TEST_PLATFORM" --cflags="$TEST_CFLAGS" $TEST_QUICK
+          ./scripts/tests --platform="$TEST_PLATFORM" --cflags="$TEST_CFLAGS" --coverage="$TEST_COVERAGE"
 
