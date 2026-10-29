@@ -165,7 +165,7 @@ static void shake_chain(slh_var_t *var, uint8_t *tmp, const uint8_t *x,
 
   if (s == 0)
   { /* no-op */
-    memcpy(tmp, x, n);
+    memmove(tmp, x, n);
     return;
   }
 
