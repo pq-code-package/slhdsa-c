@@ -11,6 +11,7 @@
 
 #include "../slh_dsa.h"
 #include "../slh_prehash.h"
+#include "../slh_sys.h"
 #include "../slh_var.h"
 
 static void kat_hex(FILE *fh, const char *label, const uint8_t *x, size_t xlen)
@@ -414,8 +415,10 @@ int main(int argc, char **argv)
     strcpy(test_func, "slh_keygen_internal()");
 
     /* run key generation */
+    SLH_CT_TESTING_SECRET(sk_seed, sk_seed_sz);
+    SLH_CT_TESTING_SECRET(sk_prf, sk_prf_sz);
     slh_keygen_internal(sk_out, pk_out, sk_seed, sk_prf, pk_seed, prm);
-
+    SLH_CT_TESTING_DECLASSIFY(sk_out, sizeof(sk_out));
 
     /* compare outputs (or print if no reference value is given) */
     if (pk == NULL)
@@ -527,6 +530,13 @@ int main(int argc, char **argv)
       exit(-1);
     }
 
+    /* SK.seed and SK.prf, and the signing randomness, are secret */
+    SLH_CT_TESTING_SECRET(sk, 2 * prm->n);
+    if (addrnd != NULL)
+    {
+      SLH_CT_TESTING_SECRET(addrnd, addrnd_sz);
+    }
+
     iface = find_par("signatureInterface");
     if (iface == NULL)
     {
@@ -572,6 +582,8 @@ int main(int argc, char **argv)
       /* not sure if this ever invoked */
       skip++;
     }
+
+    SLH_CT_TESTING_DECLASSIFY(sig_out, slh_sig_sz(prm));
 
     if (sig == NULL)
     {
