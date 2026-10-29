@@ -59,4 +59,26 @@
 #endif /* inline */
 #endif /* !SLH_INLINE */
 
+/*
+ * Constant-time testing with valgrind: secret data is marked as undefined,
+ * so that valgrind reports any branch or memory access depending on it.
+ * Values that are public by design are declassified when they are computed.
+ */
+#if defined(SLH_CONFIG_CT_TESTING_ENABLED)
+#include <valgrind/memcheck.h>
+#define SLH_CT_TESTING_SECRET(ptr, len) \
+  VALGRIND_MAKE_MEM_UNDEFINED((ptr), (len))
+#define SLH_CT_TESTING_DECLASSIFY(ptr, len) \
+  VALGRIND_MAKE_MEM_DEFINED((ptr), (len))
+#else /* SLH_CONFIG_CT_TESTING_ENABLED */
+#define SLH_CT_TESTING_SECRET(ptr, len) \
+  do                                    \
+  {                                     \
+  } while (0)
+#define SLH_CT_TESTING_DECLASSIFY(ptr, len) \
+  do                                        \
+  {                                         \
+  } while (0)
+#endif /* !SLH_CONFIG_CT_TESTING_ENABLED */
+
 #endif /* SLH_SYS_H */
