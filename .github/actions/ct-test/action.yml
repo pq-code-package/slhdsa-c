@@ -35,4 +35,4 @@ runs:
           CFLAGS_EXTRA: ${{ inputs.cflags }}
           VALGRIND_FLAGS: ${{ inputs.valgrind_flags }}
         run: |
-          ./scripts/tests --coverage=minimal --exec-wrapper="valgrind --error-exitcode=1 $VALGRIND_FLAGS" --cflags="-DSLH_CONFIG_CT_TESTING_ENABLED $CFLAGS_EXTRA"
+          ./scripts/tests acvp --coverage=minimal --exec-wrapper="valgrind --error-exitcode=1 $VALGRIND_FLAGS" --cflags="-DSLH_CONFIG_CT_TESTING_ENABLED $CFLAGS_EXTRA"

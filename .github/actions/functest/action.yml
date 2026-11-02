@@ -28,6 +28,12 @@ inputs:
   coverage:
     description: ACVP test coverage (full | quick | minimal)
     default: 'full'
+  func:
+    description: Determine whether to run the functional test or not
+    default: 'true'
+  acvp:
+    description: Determine whether to run the ACVP tests or not
+    default: 'true'
 
 runs:
   using: composite
@@ -44,6 +50,8 @@ runs:
           TEST_CFLAGS: ${{ inputs.cflags }}
           TEST_PLATFORM: ${{ inputs.platform }}
           TEST_COVERAGE: ${{ inputs.coverage }}
+          FUNC: ${{ inputs.func == 'true' && 'func' || 'no-func' }}
+          ACVP: ${{ inputs.acvp == 'true' && 'acvp' || 'no-acvp' }}
         run: |
-          ./scripts/tests --platform="$TEST_PLATFORM" --cflags="$TEST_CFLAGS" --coverage="$TEST_COVERAGE"
+          ./scripts/tests all --platform="$TEST_PLATFORM" --cflags="$TEST_CFLAGS" --coverage="$TEST_COVERAGE" --"$FUNC" --"$ACVP"
 

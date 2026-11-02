@@ -12,11 +12,23 @@ xfips205.exe: $(OBJ_FILES) test\xfips205.obj
 test\xfips205.obj: test\xfips205.c
     $(CC) $(CFLAGS) /c /Fotest\xfips205.obj test\xfips205.c
 
+test_slhdsa.exe: $(OBJ_FILES) test\src\test_slhdsa.obj test\notrandombytes\notrandombytes.obj
+    $(CC) $(CFLAGS) /Fetest_slhdsa.exe $** /link
+
+test\src\test_slhdsa.obj: test\src\test_slhdsa.c
+    $(CC) $(CFLAGS) /c /Fotest\src\test_slhdsa.obj test\src\test_slhdsa.c
+
+test\notrandombytes\notrandombytes.obj: test\notrandombytes\notrandombytes.c
+    $(CC) $(CFLAGS) /c /Fotest\notrandombytes\notrandombytes.obj test\notrandombytes\notrandombytes.c
+
 test: xfips205.exe
     python test\acvp_client.py
 
 quickcheck: xfips205.exe
     python test\acvp_client.py --coverage=quick
 
+func: test_slhdsa.exe
+    test_slhdsa.exe
+
 clean:
-    -DEL /Q *.obj test\*.obj xfips205.exe
+    -DEL /Q *.obj test\*.obj test\src\*.obj test\notrandombytes\*.obj xfips205.exe test_slhdsa.exe
