@@ -516,7 +516,13 @@ int slh_keygen(uint8_t *sk, uint8_t *pk, int (*rbg)(uint8_t *x, size_t xlen),
   uint8_t pk_root[SLH_MAX_N];
   size_t n = prm->n;
 
-  rbg(sk, 3 * n);                   /* SK.seed || SK.prf || PK.seed */
+  /* SK.seed || SK.prf || PK.seed */
+  if (rbg(sk, 3 * n) != 0)
+  {
+    /* Zeroize sk */
+    memset(sk, 0x00, 4 * n);
+    return -1;
+  }
   memcpy(pk, sk + 2 * n, n);        /* PK.seed */
   memset(sk + 3 * n, 0x00, n);      /* PK.root not generated yet */
   prm->mk_var(&var, NULL, sk, prm); /* fill in partial */
