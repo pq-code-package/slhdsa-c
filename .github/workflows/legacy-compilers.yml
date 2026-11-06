@@ -342,6 +342,7 @@ jobs:
         shell: bash
         run: |
           gcc --version
+          CC=gcc make func
           CC=gcc make xfips205
           python test/acvp_client.py --coverage=quick
 

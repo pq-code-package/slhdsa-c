@@ -1,13 +1,16 @@
 # Copyright (c) The slhdsa-c project authors
 # SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
 
-.PHONY: test
+.PHONY: test func
 
 CSRC	=	$(wildcard *.c)
 OBJS	= 	$(CSRC:.c=.o)
 
 XTEST	?=	xfips205
 XTESTC	?=	test/xfips205.c
+
+XFUNC	?=	test_slhdsa
+XFUNCC	=	test/src/test_slhdsa.c test/notrandombytes/notrandombytes.c
 
 CROSS_PREFIX ?=
 CC      ?= gcc
@@ -34,12 +37,18 @@ LDLIBS	+=
 $(XTEST):	$(OBJS)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJS) $(XTESTC) $(LDLIBS)
 
+$(XFUNC):	$(OBJS) $(XFUNCC)
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJS) $(XFUNCC) $(LDLIBS)
+
 %.o:	%.[cS]
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 test: $(XTEST)
 	EXEC_WRAPPER="$(EXEC_WRAPPER)" python3 test/acvp_client.py
 
+func: $(XFUNC)
+	$(EXEC_WRAPPER) ./$(XFUNC)
+
 clean:
-	$(RM) -rf $(XTEST) $(OBJS) *.rsp *.req *.log
+	$(RM) -rf $(XTEST) $(XFUNC) $(OBJS) *.rsp *.req *.log
 	cd test && $(MAKE) clean

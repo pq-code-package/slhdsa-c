@@ -28,6 +28,9 @@ jobs:
     runs-on: ${{ matrix.target.runner }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run func test
+        run: |
+          make func
       - name: Run ACVP test
         run: |
           make
@@ -49,6 +52,7 @@ jobs:
           submodules: true
       - name: make quickcheck
         run: |
+          CFLAGS=-std=c90 make func
           CFLAGS=-std=c90 make test
 
   scan-build:
@@ -86,6 +90,7 @@ jobs:
         run: |
           # print compiler version
           cl
+          nmake /f ./Makefile.Microsoft_nmake func
           nmake /f ./Makefile.Microsoft_nmake test
   quickcheck-windows-mingw-w64:
     strategy:
@@ -104,5 +109,6 @@ jobs:
         shell: bash
         run: |
           gcc --version
+          CC=gcc make func
           CC=gcc make xfips205
           python test/acvp_client.py --coverage=quick

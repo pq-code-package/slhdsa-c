@@ -3,12 +3,14 @@
 # Copyright (c) The slhdsa-c project authors
 # SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT
 
-"""Build xfips205 for a test platform and run the ACVP tests."""
+"""Build and run the functional and ACVP tests for a test platform."""
 
 import argparse
 import os
+import shlex
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 #
 # Test platform profiles.
@@ -63,22 +65,90 @@ def run(cmd, env):
     return subprocess.run(cmd, env=env).returncode
 
 
+def func(args, env):
+    """Run the functional test, one process per parameter set in parallel."""
+    if run(["make", "test_slhdsa"], env) != 0:
+        return 1
+
+    wrapper = shlex.split(env["EXEC_WRAPPER"])
+    binary = wrapper + ["./test_slhdsa"]
+    listing = subprocess.run(binary + ["--list"], env=env,
+                             capture_output=True, text=True)
+    if listing.returncode != 0:
+        print(listing.stdout + listing.stderr, file=sys.stderr)
+        return 1
+    # The small ("s") parameter sets are the slowest; start them first.
+    alg_ids = sorted(listing.stdout.split(), key=lambda a: not a.endswith("s"))
+
+    jobs = args.jobs or os.cpu_count() or 4
+    print(f"+ {' '.join(binary)} <alg_id>: {len(alg_ids)} parameter sets, "
+          f"{jobs} parallel jobs", file=sys.stderr, flush=True)
+
+    def run_one(alg_id):
+        return alg_id, subprocess.run(binary + [alg_id], env=env,
+                                      capture_output=True, text=True)
+
+    failed = []
+    with ThreadPoolExecutor(max_workers=jobs) as executor:
+        for alg_id, p in executor.map(run_one, alg_ids):
+            print(p.stdout, end="", flush=True)
+            if p.returncode != 0:
+                print(p.stderr, end="", file=sys.stderr, flush=True)
+                failed.append(alg_id)
+
+    if failed:
+        print(f"func FAILED: {' '.join(failed)}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def acvp(args, env):
+    if run(["make", "xfips205"], env) != 0:
+        return 1
+    cmd = [sys.executable, "test/acvp_client.py"]
+    if args.coverage is not None:
+        cmd += ["--coverage", args.coverage]
+    if args.acvp_version is not None:
+        cmd += ["--version", args.acvp_version]
+    if args.jobs is not None:
+        cmd += ["--jobs", str(args.jobs)]
+    return run(cmd, env)
+
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--platform", default="native", choices=PLATFORMS.keys(),
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--platform", default="native", choices=PLATFORMS.keys(),
                         help="Test platform (default: native)")
-    parser.add_argument("--cflags", default="",
+    common.add_argument("--cflags", default="",
                         help="Extra CFLAGS, appended to the platform's")
-    parser.add_argument("--exec-wrapper", default=None,
+    common.add_argument("--exec-wrapper", default=None,
                         help="Binary execution wrapper (e.g. valgrind); "
                              "takes precedence over the platform's")
-    parser.add_argument("--coverage", default=None,
-                        choices=["full", "quick", "minimal"],
-                        help="ACVP test coverage (see test/acvp_client.py)")
-    parser.add_argument("--acvp-version", default=None,
-                        help="ACVP test vector version")
-    parser.add_argument("--jobs", "-j", type=int, default=None,
-                        help="Number of parallel test jobs")
+    common.add_argument("--jobs", "-j", type=int, default=None,
+                        help="Number of parallel test jobs "
+                             "(default: number of CPUs)")
+
+    acvp_opts = argparse.ArgumentParser(add_help=False)
+    acvp_opts.add_argument("--coverage", default=None,
+                           choices=["full", "quick", "minimal"],
+                           help="ACVP test coverage (see test/acvp_client.py)")
+    acvp_opts.add_argument("--acvp-version", default=None,
+                           help="ACVP test vector version")
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    cmds = parser.add_subparsers(title="Commands", dest="cmd", required=True)
+    cmds.add_parser("func", parents=[common],
+                    help="Run the functional test (test/src/test_slhdsa.c)")
+    cmds.add_parser("acvp", parents=[common, acvp_opts],
+                    help="Run the ACVP tests")
+    all_parser = cmds.add_parser("all", parents=[common, acvp_opts],
+                                 help="Run all tests")
+    for name in ("func", "acvp"):
+        group = all_parser.add_mutually_exclusive_group()
+        group.add_argument(f"--{name}", action="store_true", dest=name,
+                           default=True, help=f"Run {name} test")
+        group.add_argument(f"--no-{name}", action="store_false", dest=name,
+                           help=f"Do not run {name} test")
     args = parser.parse_args()
 
     platform = PLATFORMS[args.platform]
@@ -100,17 +170,20 @@ def main():
     # Run from the repository root, wherever we are called from
     os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-    if run(["make", "clean"], env) != 0 or run(["make", "xfips205"], env) != 0:
+    if run(["make", "clean"], env) != 0:
         return 1
 
-    cmd = [sys.executable, "test/acvp_client.py"]
-    if args.coverage is not None:
-        cmd += ["--coverage", args.coverage]
-    if args.acvp_version is not None:
-        cmd += ["--version", args.acvp_version]
-    if args.jobs is not None:
-        cmd += ["--jobs", str(args.jobs)]
-    return run(cmd, env)
+    if args.cmd == "func":
+        return func(args, env)
+    if args.cmd == "acvp":
+        return acvp(args, env)
+
+    failed = False
+    if args.func:
+        failed |= func(args, env) != 0
+    if args.acvp:
+        failed |= acvp(args, env) != 0
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

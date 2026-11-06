@@ -2,6 +2,7 @@
 xtest
 xkat
 xfips205
+test_slhdsa
 acvp_cases.sh
 
 __pycache__
